@@ -1,33 +1,66 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Res, HttpStatus, Logger } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
-import { CreateTransactionDto } from './dto/create-transaction.dto';
-import { UpdateTransactionDto } from './dto/update-transaction.dto';
+import { Response } from 'express';
+import { AppController } from 'src/app.controller';
+import { Transaction } from './entities/transaction.entity';
+import { UpdateTransactionDto } from './dto/update/update-transaction.dto';
+import { CreateTransactionDto } from './dto/create/create-transaction.dto';
+import { CreateTransactionResponseDto } from './dto/create/create-transaction-response.dto';
 
 @Controller('transaction')
 export class TransactionController {
     constructor(private readonly transactionService: TransactionService) { }
+    private readonly logger = new Logger(AppController.name);
 
-    @Get('/transactions')
+    @Get()
     findAll() {
         return this.transactionService.findAll();
     }
 
-    @Get('/transactions/:id')
-    findOne(@Param('id') id: string) {
-        return this.transactionService.findOne(id);
+    @Get(':id')
+    findOne(@Param('id') id: string, @Res({ passthrough: true }) response: Response) {
+        const transaction = this.transactionService.findOne(id);
+        const isTransactionFound = transaction != undefined;
+        let statusCode: HttpStatus;
+        let result: Transaction | {}
+
+        if (isTransactionFound) {
+            this.logger.log(`Transaction ${id} found! :)`);
+            statusCode = HttpStatus.OK;
+            result = transaction
+        } else {
+            this.logger.log(`Transaction ${id} not found! :(`);
+            statusCode = HttpStatus.NOT_FOUND;
+            result = {}
+        }
+
+        response.status(statusCode).json(result);
     }
 
-    @Post('/transactions')
-    create(@Body() createTransactionDto: CreateTransactionDto) {
-        return this.transactionService.create(createTransactionDto);
+    @Post()
+    create(@Body() createTransactionDto: CreateTransactionDto, @Res({ passthrough: true }) response: Response) {
+        let statusCode: HttpStatus;
+        let result: CreateTransactionResponseDto | {}
+
+        result = this.transactionService.create(createTransactionDto);
+        if (result instanceof CreateTransactionResponseDto) {
+            statusCode = HttpStatus.CREATED
+            this.logger.log(`Transaction ${result.transactionId} created! :)`);
+        } else {
+            statusCode = HttpStatus.INTERNAL_SERVER_ERROR
+            this.logger.log(`Transaction ${createTransactionDto} not created! :(`);
+            result = {}
+        }
+
+        response.status(statusCode).json(result)
     }
 
-    @Patch('/transactions/:id')
+    @Patch(':id')
     update(@Param('id') id: string, @Body() updateTransactionDto: UpdateTransactionDto) {
         return this.transactionService.update(id, updateTransactionDto);
     }
 
-    @Delete('/transactions/:id')
+    @Delete(':id')
     remove(@Param('id') id: string) {
         return this.transactionService.remove(id);
     }
