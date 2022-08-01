@@ -1,38 +1,39 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { CreateTransactionResponseDto } from './dto/create/create-transaction-response.dto';
 import { CreateTransactionDto } from './dto/create/create-transaction.dto';
+import { TransactionDataSource } from './dto/datasource/transaction.datasource';
+import { UpdateTransactionResponseDto } from './dto/update/update-transaction-response.dto';
 import { UpdateTransactionDto } from './dto/update/update-transaction.dto';
-import { Transaction } from './entities/transaction.entity';
+import { Transaction, TransactionKeys, TransactionProperties } from './entities/transaction.entity';
+
+export const TRANSACTION_DATASOURCE_TOKEN = Symbol('TRANSACTION_DATASOURCE_TOKEN');
 
 @Injectable()
 export class TransactionService {
 
-    transactions: Transaction[] = [ 
-        new Transaction('1', new Date().toISOString(), '1234-ABC'),
-        new Transaction('2', new Date().toISOString(), '5678-DEF')
-    ];
+    private transactionDataSource: TransactionDataSource;
+
+    constructor(@Inject(TRANSACTION_DATASOURCE_TOKEN) transactionDataSource: TransactionDataSource) {
+        this.transactionDataSource = transactionDataSource;
+    }
 
     findAll(): Transaction[] {
-        return this.transactions;
+        return this.transactionDataSource.getAll();
     }
 
     findOne(transactionId: string): Transaction | undefined {
-        const transaction = this.transactions.find(transaction => transaction.id == transactionId);
-        return transaction;
+        return this.transactionDataSource.getById(transactionId);
     }
 
     create(createTransactionDto: CreateTransactionDto): CreateTransactionResponseDto {
-        const transactionToCreate = new Transaction(
-            `${this.transactions.length + 1}`, createTransactionDto.time, createTransactionDto.customId);
-        this.transactions.push(transactionToCreate);
-        return new CreateTransactionResponseDto(transactionToCreate.id);
+        return this.transactionDataSource.create(createTransactionDto);
     }
 
-    update(transactionId: string, updateTransactionDto: UpdateTransactionDto) {
-        return `This action updates a #${transactionId} transaction`;
+    update(transactionId: string, updateTransactionDto: UpdateTransactionDto): UpdateTransactionResponseDto | undefined {
+        return this.transactionDataSource.update(transactionId, updateTransactionDto);
     }
 
-    remove(transactionId: string) {
-        return `This action removes a #${transactionId} transaction`;
+    remove(transactionId: string): Transaction | undefined {
+        return this.transactionDataSource.remove(transactionId);
     }
 }

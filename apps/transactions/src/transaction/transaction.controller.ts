@@ -6,6 +6,7 @@ import { Transaction } from './entities/transaction.entity';
 import { UpdateTransactionDto } from './dto/update/update-transaction.dto';
 import { CreateTransactionDto } from './dto/create/create-transaction.dto';
 import { CreateTransactionResponseDto } from './dto/create/create-transaction-response.dto';
+import { UpdateTransactionResponseDto } from './dto/update/update-transaction-response.dto';
 
 @Controller('transaction')
 export class TransactionController {
@@ -56,12 +57,45 @@ export class TransactionController {
     }
 
     @Patch(':id')
-    update(@Param('id') id: string, @Body() updateTransactionDto: UpdateTransactionDto) {
-        return this.transactionService.update(id, updateTransactionDto);
+    update(
+        @Param('id') id: string,
+        @Body() updateTransactionDto: UpdateTransactionDto,
+        @Res({ passthrough: true }) response: Response) {
+        const transaction = this.transactionService.update(id, updateTransactionDto);
+        const isTransactionFound = transaction != undefined;
+        let statusCode: HttpStatus;
+        let result: UpdateTransactionResponseDto | {}
+
+        if (isTransactionFound) {
+            this.logger.log(`Transaction ${id} updated! :)`);
+            statusCode = HttpStatus.OK;
+            result = transaction
+        } else {
+            this.logger.log(`Transaction ${id} not updated! :(`);
+            statusCode = HttpStatus.NOT_FOUND;
+            result = {}
+        }
+
+        response.status(statusCode).json(result);
     }
 
     @Delete(':id')
-    remove(@Param('id') id: string) {
-        return this.transactionService.remove(id);
+    remove(@Param('id') id: string, @Res({ passthrough: true }) response: Response) {
+        const deletedTransaction = this.transactionService.remove(id);
+        const isTransactionDeled = deletedTransaction != undefined;
+        let statusCode: HttpStatus;
+        let result: Transaction | {}
+
+        if (isTransactionDeled) {
+            this.logger.log(`Transaction ${id} deleted! :)`);
+            statusCode = HttpStatus.OK;
+            result = deletedTransaction
+        } else {
+            this.logger.log(`Transaction ${id} not deleted! :(`);
+            statusCode = HttpStatus.NOT_FOUND;
+            result = {}
+        }
+
+        response.status(statusCode).json(result);
     }
 }
