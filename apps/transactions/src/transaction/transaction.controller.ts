@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Res, HttpStatus, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Res, HttpStatus, Logger, UseInterceptors, ClassSerializerInterceptor } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import { Response } from 'express';
 import { AppController } from 'src/app.controller';
@@ -14,8 +14,9 @@ export class TransactionController {
     private readonly logger = new Logger(AppController.name);
 
     @Get()
-    findAll() {
-        return this.transactionService.findAll();
+    @UseInterceptors(ClassSerializerInterceptor)
+    async findAll() {
+        return await this.transactionService.findAll();
     }
 
     @Get(':id')

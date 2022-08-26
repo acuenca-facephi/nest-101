@@ -4,7 +4,7 @@ import { CreateTransactionDto } from './dto/create/create-transaction.dto';
 import { TransactionDataSource } from './dto/datasource/transaction.datasource';
 import { UpdateTransactionResponseDto } from './dto/update/update-transaction-response.dto';
 import { UpdateTransactionDto } from './dto/update/update-transaction.dto';
-import { Transaction, TransactionKeys, TransactionProperties } from './entities/transaction.entity';
+import { Transaction } from './entities/transaction.entity';
 
 export const TRANSACTION_DATASOURCE_TOKEN = Symbol('TRANSACTION_DATASOURCE_TOKEN');
 
@@ -17,8 +17,8 @@ export class TransactionService {
         this.transactionDataSource = transactionDataSource;
     }
 
-    findAll(): Transaction[] {
-        return this.transactionDataSource.getAll();
+    async findAll(): Promise<Transaction[]> {
+        return await this.transactionDataSource.getAll();
     }
 
     findOne(transactionId: string): Transaction | undefined {

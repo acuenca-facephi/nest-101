@@ -5,7 +5,7 @@ import { UpdateTransactionResponseDto } from "../update/update-transaction-respo
 import { UpdateTransactionDto } from "../update/update-transaction.dto";
 
 export interface TransactionDataSource {
-    getAll(): Transaction[]
+    getAll(): Transaction[] | Promise<Transaction[]>
     getById(transactionId: string): Transaction | undefined
     create(createTransactionDto: CreateTransactionDto): CreateTransactionResponseDto
     update(transactionId: string, updateTransactionDto: UpdateTransactionDto): UpdateTransactionResponseDto | undefined

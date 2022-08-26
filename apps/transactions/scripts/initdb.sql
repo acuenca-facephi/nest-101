@@ -1,3 +1,4 @@
 DROP DATABASE IF EXISTS "nest_transactions";
 CREATE DATABASE "nest_transactions";
-GRANT ALL PRIVILEGES ON DATABASE database_name TO nest_transactions;
+CREATE USER nest_transactions WITH ENCRYPTED PASSWORD 'admin1234';
+GRANT ALL PRIVILEGES ON DATABASE nest_transactions TO nest_transactions;
