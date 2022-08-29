@@ -1,4 +1,4 @@
-import { Transaction, TransactionProperties } from 'src/transaction/entities/transaction.entity';
+import { Transaction, TransactionProperties, TransactionPropertiesNames } from 'src/transaction/entities/transaction.entity';
 import { CreateTransactionResponseDto } from '../../create/create-transaction-response.dto';
 import { CreateTransactionDto } from '../../create/create-transaction.dto';
 import { UpdateTransactionResponseDto } from '../../update/update-transaction-response.dto';
@@ -84,17 +84,23 @@ export class TransactionPostgreSqlDataSource implements TransactionDataSource {
         });
     }
 
+    private mapRowToTransaction(row: any): Transaction {
+        if (row.id && row.time && row.customid)
+            return new Transaction(row.id, row.time, row.customid);
+        else
+            throw new Error(`The row ${JSON.stringify(row)} it isn't a Transaction.`);
+
+    }
+
     async getAll(): Promise<Transaction[]> {
         var transactions: Transaction[] = [];
         const query = `SELECT * FROM ${this.TableName};`;
 
         try {
             const queryResult = await this.Pool.query(query);
-            queryResult.rows.map(row => {
+            queryResult.rows.forEach(row => {
                 transactions.push(
-                    new Transaction(
-                        row.id, row.time, row.customid
-                    )
+                    this.mapRowToTransaction(row)
                 );
             });
         } catch (error) {
@@ -104,19 +110,73 @@ export class TransactionPostgreSqlDataSource implements TransactionDataSource {
         return transactions;
     }
 
-    getById(transactionId: string): Transaction | undefined {
-        throw new Error('Method not implemented.');
+    async getById(transactionId: string): Promise<Transaction | undefined> {
+        var transaction: Transaction | undefined;
+        const query = { text: `SELECT * FROM ${this.TableName} WHERE id = $1;`, values: [transactionId] };
+
+        try {
+            const queryResult = await this.Pool.query(query);
+            transaction = this.mapRowToTransaction(queryResult.rows[0]);
+        } catch (error) {
+            transaction = undefined;
+        }
+
+        return transaction;
     }
 
-    create(createTransactionDto: CreateTransactionDto): CreateTransactionResponseDto {
-        throw new Error('Method not implemented.');
+    async create(createTransactionDto: CreateTransactionDto): Promise<CreateTransactionResponseDto | undefined> {
+        var result: CreateTransactionResponseDto | undefined;
+        const query = {
+            text: `INSERT INTO ${this.TableName}(time, customid) VALUES ($1, $2) RETURNING id;`,
+            values: [createTransactionDto.time, createTransactionDto.customId]
+        };
+
+        try {
+            const queryResult = await this.Pool.query(query);
+            result = new CreateTransactionResponseDto(queryResult.rows[0].id);
+        } catch (error) {
+            result = undefined;
+        }
+
+        return result;
     }
 
-    update(transactionId: string, updateTransactionDto: UpdateTransactionDto): UpdateTransactionResponseDto | undefined {
-        throw new Error('Method not implemented.');
+    async update(transactionId: string, updateTransactionDto: UpdateTransactionDto): Promise<UpdateTransactionResponseDto | undefined> {
+        var result: UpdateTransactionResponseDto | undefined;
+        var updateText: string = '';
+        const queryValues = [];
+        const propertiesToUpdate = Object.entries(updateTransactionDto).filter(entry => TransactionPropertiesNames.includes(entry[0]) && entry[0] != 'id');
+        for (let index = 0; index < propertiesToUpdate.length; index++) {
+            const propertyToUpdate = propertiesToUpdate[index];
+            updateText += `${propertyToUpdate[0]}=$${index + 2}${index < propertiesToUpdate.length - 1 ? ', ' : ''}`;
+            queryValues.push(propertyToUpdate[1]);
+        }
+        const query = {
+            text: `UPDATE ${this.TableName} SET ${updateText} WHERE id = $1 RETURNING id;`,
+            values: [transactionId].concat(queryValues)
+        };
+
+        try {
+            const queryResult = await this.Pool.query(query);
+            result = new UpdateTransactionResponseDto(queryResult.rows[0].id);
+        } catch (error) {
+            result = undefined;
+        }
+
+        return result;
     }
 
-    remove(transactionId: string): Transaction | undefined {
-        throw new Error('Method not implemented.');
+    async remove(transactionId: string): Promise<Transaction | undefined> {
+        var transaction: Transaction | undefined;
+        const query = { text: `DELETE FROM ${this.TableName} WHERE id = $1 RETURNING *;`, values: [transactionId] };
+
+        try {
+            const queryResult = await this.Pool.query(query);
+            transaction = this.mapRowToTransaction(queryResult.rows[0]);
+        } catch (error) {
+            transaction = undefined;
+        }
+
+        return transaction;
     }
 }

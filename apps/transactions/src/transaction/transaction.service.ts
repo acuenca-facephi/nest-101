@@ -18,22 +18,22 @@ export class TransactionService {
     }
 
     async findAll(): Promise<Transaction[]> {
-        return await this.transactionDataSource.getAll();
+        return this.transactionDataSource.getAll();
     }
 
-    findOne(transactionId: string): Transaction | undefined {
+    async findOne(transactionId: string): Promise<Transaction | undefined> {
         return this.transactionDataSource.getById(transactionId);
     }
 
-    create(createTransactionDto: CreateTransactionDto): CreateTransactionResponseDto {
+    async create(createTransactionDto: CreateTransactionDto): Promise<CreateTransactionResponseDto | undefined> {
         return this.transactionDataSource.create(createTransactionDto);
     }
 
-    update(transactionId: string, updateTransactionDto: UpdateTransactionDto): UpdateTransactionResponseDto | undefined {
+    async update(transactionId: string, updateTransactionDto: UpdateTransactionDto): Promise<UpdateTransactionResponseDto | undefined> {
         return this.transactionDataSource.update(transactionId, updateTransactionDto);
     }
 
-    remove(transactionId: string): Transaction | undefined {
+    async remove(transactionId: string): Promise<Transaction | undefined> {
         return this.transactionDataSource.remove(transactionId);
     }
 }

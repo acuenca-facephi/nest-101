@@ -4,13 +4,12 @@ import { UpdateTransactionResponseDto } from 'src/transaction/dto/update/update-
 import { UpdateTransactionDto } from 'src/transaction/dto/update/update-transaction.dto';
 import { Transaction, TransactionKeys, TransactionPropertiesNames } from 'src/transaction/entities/transaction.entity';
 import { TransactionDataSource } from '../transaction.datasource';
-import { v4 as uuidV4 } from "uuid";
 
 export class TransactionMemoryDataSource implements TransactionDataSource {
 
     private transactions: Transaction[] = [
-        new Transaction('', new Date().toISOString(), '1234-ABC'),
-        new Transaction('', new Date().toISOString(), '5678-DEF')
+        new Transaction('1', new Date().toISOString(), '1234-ABC'),
+        new Transaction('2', new Date().toISOString(), '5678-DEF')
     ];
 
     getAll(): Transaction[] {
@@ -23,7 +22,7 @@ export class TransactionMemoryDataSource implements TransactionDataSource {
     }
 
     create(createTransactionDto: CreateTransactionDto): CreateTransactionResponseDto {
-        const transactionToCreate = new Transaction(uuidV4(), createTransactionDto.time, createTransactionDto.customId);
+        const transactionToCreate = new Transaction(`${this.transactions.length + 1}`, createTransactionDto.time, createTransactionDto.customId);
         this.transactions.push(transactionToCreate);
         return new CreateTransactionResponseDto(transactionToCreate.id as string);
     }
@@ -37,7 +36,7 @@ export class TransactionMemoryDataSource implements TransactionDataSource {
             const propertiesToUpdate = Object.entries(updateTransactionDto);
             for (let index = 0; index < propertiesToUpdate.length; index++) {
                 const propertyToUpdate = propertiesToUpdate[index];
-                if (TransactionPropertiesNames.includes(propertyToUpdate[0])) {
+                if (TransactionPropertiesNames.includes(propertyToUpdate[0]) && propertyToUpdate[0] != 'id') {
                     transactionToUpdate[`${propertyToUpdate[0] as TransactionKeys}`] = propertyToUpdate[1];
                 }
             }

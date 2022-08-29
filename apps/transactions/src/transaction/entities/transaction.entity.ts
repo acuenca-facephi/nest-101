@@ -24,7 +24,7 @@ export class Transaction {
     }
 
     set id(uuid: UUID) {
-        this.#id = uuid;
+        //this.#id = uuid;
     }
 }
 

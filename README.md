@@ -25,3 +25,4 @@ Exercise to learn about NestJS, a Node framework.
     const document = SwaggerModule.createDocument(app, options);
     SwaggerModule.setup('api', app, document);
     ```
+* `nest g library {libraryName}`: Creates a new Nest library project.
