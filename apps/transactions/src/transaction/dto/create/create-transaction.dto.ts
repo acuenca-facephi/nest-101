@@ -1,3 +1,3 @@
-import { Transaction } from "src/transaction/entities/transaction.entity";
+import { Transaction } from '../../entities/transaction.entity';
 
 export class CreateTransactionDto extends Transaction {}

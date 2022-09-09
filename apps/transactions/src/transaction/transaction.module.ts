@@ -3,21 +3,27 @@ import { TransactionService, TRANSACTION_DATASOURCE_TOKEN } from './transaction.
 import { TransactionController } from './transaction.controller';
 // import { TransactionMemoryDataSource } from './dto/datasource/memory/memory.transaction.datasource';
 import { TransactionPostgreSqlDataSource } from './dto/datasource/posgresql/postgresql.transaction.datasource';
-import * as env from 'src/environment/environment'
-import { AppController } from 'src/app.controller';
+import { AppController } from '../app.controller';
+import { PostgresModule, PostgresService } from '@app/postgres';
+import { ConfigModule } from '@nestjs/config';
+import { APP_LOGGER_TOKEN } from '../app.service';
 
 @Module({
+    imports: [
+        PostgresModule,
+        ConfigModule.forRoot()
+    ],
     controllers: [TransactionController],
     providers: [
         {
-            provide: TRANSACTION_DATASOURCE_TOKEN,
-            useValue: new TransactionPostgreSqlDataSource(
-                env.DATABASE_HOST, env.DATABASE_NAME, env.DATABASE_USER,
-                env.DATABASE_PASSWORD, Number.parseInt(env.DATABASE_PORT),
-                new Logger(AppController.name)
-            )
-            // useValue: new TransactionMemoryDataSource()
+            provide: APP_LOGGER_TOKEN,
+            useValue: new Logger(AppController.name)
         },
+        {
+            provide: TransactionPostgreSqlDataSource,
+            useClass: TransactionPostgreSqlDataSource
+        },
+        TransactionPostgreSqlDataSource,
         TransactionService
     ]
 })

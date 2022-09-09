@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CreateTransactionResponseDto } from './dto/create/create-transaction-response.dto';
 import { CreateTransactionDto } from './dto/create/create-transaction.dto';
+import { TransactionPostgreSqlDataSource } from './dto/datasource/posgresql/postgresql.transaction.datasource';
 import { TransactionDataSource } from './dto/datasource/transaction.datasource';
 import { UpdateTransactionResponseDto } from './dto/update/update-transaction-response.dto';
 import { UpdateTransactionDto } from './dto/update/update-transaction.dto';
@@ -13,7 +14,7 @@ export class TransactionService {
 
     private transactionDataSource: TransactionDataSource;
 
-    constructor(@Inject(TRANSACTION_DATASOURCE_TOKEN) transactionDataSource: TransactionDataSource) {
+    constructor(@Inject(TransactionPostgreSqlDataSource) transactionDataSource: TransactionDataSource) {
         this.transactionDataSource = transactionDataSource;
     }
 

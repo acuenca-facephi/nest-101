@@ -1,7 +1,7 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { Expose } from "class-transformer";
-import { getAllObjectPropertyNames } from "src/util/util";
-import { UUID } from "src/util/uuid";
+import { ApiProperty } from '@nestjs/swagger';
+import { Expose } from 'class-transformer';
+import { getAllObjectPropertyNames } from '../../util/util';
+import { UUID } from '@app/postgres';
 
 export class Transaction {
     #id: UUID;
@@ -24,12 +24,12 @@ export class Transaction {
     }
 
     set id(uuid: UUID) {
-        //this.#id = uuid;
+        this.#id = uuid;
     }
 }
 
 export type TransactionKeys = keyof Transaction;
 
-const TransactionInstance = new Transaction(new UUID(''), '', '');
+export const TransactionInstance = new Transaction(new UUID(''), '', '');
 
 export const [TransactionPropertiesNames, TransactionProperties] = getAllObjectPropertyNames(TransactionInstance);

@@ -1,8 +1,8 @@
-import { CreateTransactionResponseDto } from 'src/transaction/dto/create/create-transaction-response.dto';
-import { CreateTransactionDto } from 'src/transaction/dto/create/create-transaction.dto';
-import { UpdateTransactionResponseDto } from 'src/transaction/dto/update/update-transaction-response.dto';
-import { UpdateTransactionDto } from 'src/transaction/dto/update/update-transaction.dto';
-import { Transaction, TransactionKeys, TransactionPropertiesNames } from 'src/transaction/entities/transaction.entity';
+import { CreateTransactionResponseDto } from '../../../dto/create/create-transaction-response.dto';
+import { CreateTransactionDto } from '../../../dto/create/create-transaction.dto';
+import { UpdateTransactionResponseDto } from '../../../dto/update/update-transaction-response.dto';
+import { UpdateTransactionDto } from '../../../dto/update/update-transaction.dto';
+import { Transaction, TransactionKeys, TransactionPropertiesNames } from '../../../entities/transaction.entity';
 import { TransactionDataSource } from '../transaction.datasource';
 
 export class TransactionMemoryDataSource implements TransactionDataSource {

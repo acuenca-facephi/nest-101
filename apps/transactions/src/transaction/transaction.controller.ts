@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Res, HttpStatus, Logger, UseInterceptors, ClassSerializerInterceptor } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import { Response } from 'express';
-import { AppController } from 'src/app.controller';
+import { AppController } from '../app.controller';
 import { Transaction } from './entities/transaction.entity';
 import { UpdateTransactionDto } from './dto/update/update-transaction.dto';
 import { CreateTransactionDto } from './dto/create/create-transaction.dto';
@@ -50,7 +50,7 @@ export class TransactionController {
             this.logger.log(`Transaction ${result.transactionId} created! :)`);
         } else {
             statusCode = HttpStatus.INTERNAL_SERVER_ERROR
-            this.logger.log(`Transaction ${createTransactionDto} not created! :(`);
+            this.logger.log(`Transaction ${JSON.stringify(createTransactionDto)} not created! :(`);
             result = {}
         }
 
