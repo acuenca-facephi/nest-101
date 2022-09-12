@@ -35,6 +35,15 @@
       "compilerOptions": {
         "tsConfigPath": "libs/postgres/tsconfig.lib.json"
       }
+    },
+    "producer": {
+      "type": "application",
+      "root": "apps/producer",
+      "entryFile": "main",
+      "sourceRoot": "apps/producer/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/producer/tsconfig.app.json"
+      }
     }
   }
 }

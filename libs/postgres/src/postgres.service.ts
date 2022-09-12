@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Json } from 'apps/transactions/src/util/json';
 import { Pool } from 'pg';
 import { getAllObjectPropertyNames } from './util/util';
 import { UUID } from './util/uuid';
@@ -25,29 +26,57 @@ export class PostgresService {
             password: databasePassword,
             port: databasePort,
         });
-        [this.ObjectPropertyNames, this.ObjectProperties] = getAllObjectPropertyNames(instanceOfObject);
+        this.setObjectInstance(instanceOfObject);
         this.createTableIfNotExists(this.TableName, this.ObjectProperties, this.TablePrimaryKeyName);
     }
 
+    setObjectInstance(instanceOfObject: object) {
+        [this.ObjectPropertyNames, this.ObjectProperties] = getAllObjectPropertyNames(instanceOfObject);
+    }
+
     private mapJsTypeToPsqlType(jsType: any): string {
-        var postgreSql: string = 'text';
+        var postgreSqlType: string;
         var typeofJsType = typeof jsType;
 
-        if (typeofJsType == 'number')
-            postgreSql = 'int';
-        else if (typeofJsType == 'boolean')
-            postgreSql = 'boolean';
-        else if (typeofJsType === 'string')
-            postgreSql = 'varchar';
-        else if (typeofJsType == 'object')
-            if (jsType.constructor.name == UUID.name)
-                postgreSql = 'uuid';
+        switch (typeofJsType) {
+            case 'number':
+                postgreSqlType = 'int';
+                break;
+            case 'bigint':
+                postgreSqlType = 'bigint';
+                break;
+            case 'boolean':
+                postgreSqlType = 'boolean';
+                break;
+            case 'string':
+                postgreSqlType = 'varchar';
+                break;
+            case 'object':
+                switch ((jsType as object).constructor.name) {
+                    case UUID.name:
+                        postgreSqlType = 'uuid';
+                        break;
+                    case Json.name:
+                        postgreSqlType = 'jsonb';
+                        break;
+                    default:
+                        postgreSqlType = ''
+                        break;
+                }
+                break;
+            default:
+                postgreSqlType = ''
+                break;
+        }
 
-        return postgreSql;
+        return postgreSqlType;
     }
 
     private fillFieldConstraints(fieldName: string, fieldType: string, isPrimaryKey: boolean): string {
         let fieldPsqlType = this.mapJsTypeToPsqlType(fieldType);
+        if (!fieldPsqlType)
+            // TODO: Create a valid postgres types enum instead of "fieldType: string" parameter.
+            throw new Error(`Invalid postgres type ${fieldType}`);
         let fieldText: string = `"${fieldName}" ${fieldPsqlType}`;
 
         if (isPrimaryKey) {

@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 import { getAllObjectPropertyNames } from '../../util/util';
 import { UUID } from '@app/postgres';
+import { Json } from '../../util/json';
 
 export class Transaction {
     #id: UUID;
@@ -12,10 +13,18 @@ export class Transaction {
     @ApiProperty()
     customId: string;
 
-    constructor(id: UUID, time: string, customId: string) {
+    @ApiProperty()
+    type: string;
+
+    @ApiProperty()
+    data: Json;
+
+    constructor(id: UUID, time: string, customId: string, type: string, data: Json) {
         this.#id = id;
         this.time = time;
         this.customId = customId;
+        this.type = type;
+        this.data = data;
     }
 
     @Expose()
@@ -30,6 +39,6 @@ export class Transaction {
 
 export type TransactionKeys = keyof Transaction;
 
-export const TransactionInstance = new Transaction(new UUID(''), '', '');
+export const TransactionInstance = new Transaction(new UUID(''), '', '', '', new Json({}));
 
 export const [TransactionPropertiesNames, TransactionProperties] = getAllObjectPropertyNames(TransactionInstance);

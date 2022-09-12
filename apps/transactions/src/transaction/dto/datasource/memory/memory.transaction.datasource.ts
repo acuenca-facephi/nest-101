@@ -1,3 +1,4 @@
+import { Json } from 'apps/transactions/src/util/json';
 import { CreateTransactionResponseDto } from '../../../dto/create/create-transaction-response.dto';
 import { CreateTransactionDto } from '../../../dto/create/create-transaction.dto';
 import { UpdateTransactionResponseDto } from '../../../dto/update/update-transaction-response.dto';
@@ -8,8 +9,8 @@ import { TransactionDataSource } from '../transaction.datasource';
 export class TransactionMemoryDataSource implements TransactionDataSource {
 
     private transactions: Transaction[] = [
-        new Transaction('1', new Date().toISOString(), '1234-ABC'),
-        new Transaction('2', new Date().toISOString(), '5678-DEF')
+        new Transaction('1', new Date().toISOString(), '1234-ABC', 'com.facephi.nest101.step.changed', new Json({ 'step': '1st step' })),
+        new Transaction('2', new Date().toISOString(), '5678-DEF', 'com.facephi.nest101.status.changed', new Json({ 'status': 'SUCCEDED' }))
     ];
 
     getAll(): Transaction[] {
@@ -22,7 +23,9 @@ export class TransactionMemoryDataSource implements TransactionDataSource {
     }
 
     create(createTransactionDto: CreateTransactionDto): CreateTransactionResponseDto {
-        const transactionToCreate = new Transaction(`${this.transactions.length + 1}`, createTransactionDto.time, createTransactionDto.customId);
+        const transactionToCreate = new Transaction(
+            `${this.transactions.length + 1}`, createTransactionDto.time, createTransactionDto.customId,
+            createTransactionDto.type, createTransactionDto.data);
         this.transactions.push(transactionToCreate);
         return new CreateTransactionResponseDto(transactionToCreate.id as string);
     }
@@ -43,7 +46,7 @@ export class TransactionMemoryDataSource implements TransactionDataSource {
             updateTransactionResponse = new UpdateTransactionResponseDto(transactionToUpdate.id as string);
         } else
             updateTransactionResponse = undefined;
-        
+
         return updateTransactionResponse;
     }
 

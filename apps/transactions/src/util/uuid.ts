@@ -1,1 +1,1 @@
-export class UUID extends String {}
+export class UUID extends String { }
