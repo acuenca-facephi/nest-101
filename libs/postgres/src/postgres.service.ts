@@ -27,11 +27,11 @@ export class PostgresService {
             port: databasePort,
         });
         this.setObjectInstance(instanceOfObject);
-        this.createTableIfNotExists(this.TableName, this.ObjectProperties, this.TablePrimaryKeyName);
     }
 
     setObjectInstance(instanceOfObject: object) {
         [this.ObjectPropertyNames, this.ObjectProperties] = getAllObjectPropertyNames(instanceOfObject);
+        this.createTableIfNotExists();
     }
 
     private mapJsTypeToPsqlType(jsType: any): string {
@@ -90,25 +90,63 @@ export class PostgresService {
         return fieldText;
     }
 
-    private createTableIfNotExists(tableName: string, tableFields: [fieldName: string, fieldType: any][], primaryKeyFieldName: string) {
+    private alterTableAddColumnIfNotExists(columnName: string, columnType: any) {
+        const query =
+            `ALTER TABLE ${this.TableName} ADD COLUMN IF NOT EXISTS "${columnName}" ${this.mapJsTypeToPsqlType(columnType)};`;
+
+        this.Pool.query(query)
+            .then(_ => {
+                this.Logger.log(`Column "${columnName}" added succesfylly or already exists.`);
+            })
+            .catch(error => this.Logger.error(
+                `Error adding column "${columnName}", details below:\n${JSON.stringify(error)}`));
+    }
+
+    private checkTableColumns() {
+        const query = `
+            SELECT table_name, column_name, data_type
+            FROM information_schema.columns
+            WHERE table_name = '${this.TableName}';`;
+        let tableColumnsNames: string[];
+
+        this.Pool.query(query)
+            .then(queryResult => {
+                tableColumnsNames = queryResult.rows.map(it => it.column_name as string);
+                this.ObjectPropertyNames.forEach(objectPropertyName => {
+                    if (!tableColumnsNames.includes(objectPropertyName)) {
+                        this.alterTableAddColumnIfNotExists(
+                            objectPropertyName, this.ObjectProperties.find(it => it[0] == objectPropertyName)![1]);
+                    }
+                });
+            })
+            .catch(error => this.Logger.error(
+                `Error checking table columns, details below:\n${JSON.stringify(error)}`));
+    }
+
+    private createTableIfNotExists() {
         let fieldsTypes: string = '';
 
-        for (let index = 0; index < tableFields.length; index++) {
-            const element = tableFields[index];
-            const fieldText = this.fillFieldConstraints(element[0], element[1], element[0] == primaryKeyFieldName);
+        for (let index = 0; index < this.ObjectProperties.length; index++) {
+            const element = this.ObjectProperties[index];
+            const fieldText = this.fillFieldConstraints(element[0], element[1], element[0] == this.TablePrimaryKeyName);
             fieldsTypes += `${index == 0 ? '' : ', '}${fieldText}`;
         }
 
         const query = `
-        CREATE TABLE IF NOT EXISTS ${tableName} (
+        CREATE TABLE IF NOT EXISTS ${this.TableName} (
             ${fieldsTypes}
         );`;
 
         this.Pool.query(query)
-            .then(_ => this.Logger.log(
-                `Table created succesfylly or already exists.`))
-            .catch(error => this.Logger.error(
-                `Error creating table, details below:\n${JSON.stringify(error)}`));
+            .then(_ => {
+                this.Logger.log(`Table "${this.TableName}" created succesfylly or already exists.`);
+                this.checkTableColumns();
+            })
+            .catch(error => {
+                const errorMessage = `Error creating table "${this.TableName}", details below:\n${JSON.stringify(error)}`;
+                this.Logger.error(errorMessage);
+                throw new Error(errorMessage);
+            });
     }
 
     async getAll(): Promise<object[] | undefined> {
