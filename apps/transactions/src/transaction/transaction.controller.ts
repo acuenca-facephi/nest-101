@@ -1,4 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Res, HttpStatus, Logger, UseInterceptors, ClassSerializerInterceptor } from '@nestjs/common';
+import {
+    Controller, Get, Post, Body, Patch, Param, Delete, Res, HttpStatus,
+    Logger, UseInterceptors, ClassSerializerInterceptor
+} from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import { Response } from 'express';
 import { AppController } from '../app.controller';
@@ -7,9 +10,10 @@ import { UpdateTransactionDto } from './dto/update/update-transaction.dto';
 import { CreateTransactionDto } from './dto/create/create-transaction.dto';
 import { CreateTransactionResponseDto } from './dto/create/create-transaction-response.dto';
 import { UpdateTransactionResponseDto } from './dto/update/update-transaction-response.dto';
+import { ExcludeNullInterceptor } from '../util/exclude-null.interceptor';
 
 @Controller('transaction')
-@UseInterceptors(ClassSerializerInterceptor)
+@UseInterceptors(ClassSerializerInterceptor, ExcludeNullInterceptor)
 export class TransactionController {
     constructor(private readonly transactionService: TransactionService) { }
     private readonly logger = new Logger(AppController.name);
