@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
+import { UtilsModule } from 'utils/utils';
 import { PostgresService } from './postgres.service';
 
 @Module({
-  providers: [PostgresService],
-  exports: [PostgresService]
+    imports: [UtilsModule],
+    providers: [PostgresService],
+    exports: [PostgresService]
 })
-export class PostgresModule {}
+export class PostgresModule { }

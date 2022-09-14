@@ -1,8 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Json } from 'apps/transactions/src/util/json';
 import { Pool } from 'pg';
-import { getAllObjectPropertyNames } from './util/util';
-import { UUID } from './util/uuid';
+import { ObjectUtils, Json, UUID } from 'utils/utils';
 
 @Injectable()
 export class PostgresService {
@@ -30,7 +28,7 @@ export class PostgresService {
     }
 
     setObjectInstance(instanceOfObject: object) {
-        [this.ObjectPropertyNames, this.ObjectProperties] = getAllObjectPropertyNames(instanceOfObject);
+        [this.ObjectPropertyNames, this.ObjectProperties] = ObjectUtils.getAllObjectPropertyNames(instanceOfObject);
         this.createTableIfNotExists();
     }
 

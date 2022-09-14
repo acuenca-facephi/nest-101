@@ -16,6 +16,21 @@
             ],
             "cwd": "${workspaceFolder}/apps/transactions",
             "console": "integratedTerminal"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Debug Producer",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "preLaunchTask": "producer-build",
+            "program": "${workspaceFolder}/apps/producer/src/main.ts",
+            "outFiles": [
+                "${workspaceFolder}/dist/**/*.js"
+            ],
+            "cwd": "${workspaceFolder}/apps/producer",
+            "console": "integratedTerminal"
         }
     ]
 }

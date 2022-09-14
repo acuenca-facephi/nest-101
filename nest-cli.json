@@ -6,7 +6,7 @@
   "root": "apps/transactions",
   "compilerOptions": {
     "webpack": true,
-    "tsConfigPath": "apps/transactions/tsconfig.app.json"
+    "tsConfigPath": "tsconfig.json"
   },
   "projects": {
     "transactions": {
@@ -34,6 +34,15 @@
       "sourceRoot": "apps/producer/src",
       "compilerOptions": {
         "tsConfigPath": "apps/producer/tsconfig.app.json"
+      }
+    },
+    "utils": {
+      "type": "library",
+      "root": "libs/utils",
+      "entryFile": "index",
+      "sourceRoot": "libs/utils/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/utils/tsconfig.lib.json"
       }
     }
   }

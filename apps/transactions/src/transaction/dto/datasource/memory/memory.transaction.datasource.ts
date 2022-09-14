@@ -9,8 +9,8 @@ import { TransactionDataSource } from '../transaction.datasource';
 export class TransactionMemoryDataSource implements TransactionDataSource {
 
     private transactions: Transaction[] = [
-        new Transaction('1', new Date().toISOString(), '1234-ABC', 'com.facephi.nest101.step.changed', new Json({ 'step': '1st step' })),
-        new Transaction('2', new Date().toISOString(), '5678-DEF', 'com.facephi.nest101.status.changed', new Json({ 'status': 'SUCCEDED' }))
+        new Transaction('1', new Date().toISOString(), '1234-ABC'),
+        new Transaction('2', new Date().toISOString(), '5678-DEF')
     ];
 
     getAll(): Transaction[] {
@@ -24,8 +24,7 @@ export class TransactionMemoryDataSource implements TransactionDataSource {
 
     create(createTransactionDto: CreateTransactionDto): CreateTransactionResponseDto {
         const transactionToCreate = new Transaction(
-            `${this.transactions.length + 1}`, createTransactionDto.time, createTransactionDto.customId,
-            createTransactionDto.type, createTransactionDto.data);
+            `${this.transactions.length + 1}`, createTransactionDto.time, createTransactionDto.customId);
         this.transactions.push(transactionToCreate);
         return new CreateTransactionResponseDto(transactionToCreate.id as string);
     }

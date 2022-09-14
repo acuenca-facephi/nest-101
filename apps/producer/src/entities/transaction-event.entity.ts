@@ -1,22 +1,15 @@
-import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { getAllObjectPropertyNames } from '../../util/util';
-import { UUID } from '@app/postgres';
-import { Json } from '../../util/json';
+import { Json, ObjectUtils, UUID } from 'utils/utils';
 
 export class TransactionEvent {
     #id: UUID;
 
-    @ApiProperty()
     time: string;
 
-    @ApiProperty()
     customId: string;
 
-    @ApiProperty()
     type: string;
 
-    @ApiProperty()
     data: Json;
 
     constructor(id: UUID, time: string, customId: string, type: string, data: Json) {
@@ -37,8 +30,13 @@ export class TransactionEvent {
     }
 }
 
-export type TransactionKeys = keyof Transaction;
+export type TransactionEventKeys = keyof TransactionEvent;
 
-export const TransactionInstance = new Transaction(new UUID(''), '', '', '', new Json({}));
+export const TransactionEventInstance = new TransactionEvent(new UUID(''), '', '', '', new Json({}));
 
-export const [TransactionPropertiesNames, TransactionProperties] = getAllObjectPropertyNames(TransactionInstance);
+export const [TransactionEventPropertiesNames, TransactionEventProperties] = ObjectUtils.getAllObjectPropertyNames(TransactionEventInstance);
+
+const transactions: TransactionEvent[] = [
+    new TransactionEvent('1', new Date().toISOString(), '1234-ABC', 'com.facephi.nest101.step.changed', new Json({ 'step': '1st step' })),
+    new TransactionEvent('2', new Date().toISOString(), '5678-DEF', 'com.facephi.nest101.status.changed', new Json({ 'status': 'SUCCEDED' }))
+];

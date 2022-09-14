@@ -1,4 +1,4 @@
-import { Transaction, TransactionInstance, TransactionProperties, TransactionPropertiesNames } from '../../../entities/transaction.entity';
+import { Transaction, TransactionInstance } from '../../../entities/transaction.entity';
 import { CreateTransactionResponseDto } from '../../create/create-transaction-response.dto';
 import { CreateTransactionDto } from '../../create/create-transaction.dto';
 import { UpdateTransactionResponseDto } from '../../update/update-transaction-response.dto';
@@ -8,7 +8,6 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PostgresService } from '@app/postgres';
 import { ConfigService } from '@nestjs/config';
 import { APP_LOGGER_TOKEN } from 'apps/transactions/src/app.service';
-import { Json } from 'apps/transactions/src/util/json';
 
 @Injectable()
 export class TransactionPostgreSqlDataSource implements TransactionDataSource {
@@ -29,7 +28,7 @@ export class TransactionPostgreSqlDataSource implements TransactionDataSource {
     }
 
     private mapObjectToTransaction(transactionObject: object): Transaction {
-        var transaction: Transaction = new Transaction('', '', '', '', new Json({}));
+        var transaction: Transaction = new Transaction('', '', '');
         Object.assign(transaction, transactionObject);
 
         if (transaction.id && transaction.time && transaction.customId)
