@@ -2,12 +2,20 @@ import { Inject, Injectable } from '@nestjs/common';
 import { CreateTransactionEventResponseDto } from './dto/create/create-transaction-event-response.dto';
 import { CreateTransactionEventDto } from './dto/create/create-transaction-event.dto';
 import { TransactionEventDataSource } from './dto/datasource/transaction.datasource';
-import { PRODUCER_LOGGER_TOKEN } from './producer.module';
+
+export const PRODUCER_LOGGER_TOKEN = Symbol('PRODUCER_LOGGER_TOKEN');
+export const PRODUCER_TRANSACTION_EVENT_DATA_SOURCE_TOKEN = Symbol('PRODUCER_TRANSACTION_EVENT_TOKEN');
 
 @Injectable()
 export class ProducerService {
+
+    private transactionEventDataSource: TransactionEventDataSource;
+
     constructor(
-        @Inject(PRODUCER_LOGGER_TOKEN) private transactionEventDataSource: TransactionEventDataSource) { }
+        @Inject(PRODUCER_TRANSACTION_EVENT_DATA_SOURCE_TOKEN) transactionEventDataSource: TransactionEventDataSource
+    ) {
+        this.transactionEventDataSource = transactionEventDataSource;
+    }
 
     async createTransactionEvent(
         createTransactionDto: CreateTransactionEventDto

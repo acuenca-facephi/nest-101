@@ -1,10 +1,9 @@
 import {
-    Body, ClassSerializerInterceptor, Controller, Get, HttpStatus,
+    Body, ClassSerializerInterceptor, Controller, Get, HttpException, HttpStatus,
     Inject, Logger, Post, Res, UseInterceptors
 } from '@nestjs/common';
 import { CreateTransactionEventDto } from './dto/create/create-transaction-event.dto';
-import { PRODUCER_LOGGER_TOKEN } from './producer.module';
-import { ProducerService } from './producer.service';
+import { ProducerService, PRODUCER_LOGGER_TOKEN } from './producer.service';
 import { Response } from 'express';
 import { ExcludeNullInterceptor } from 'utils/utils';
 import { CreateTransactionEventResponseDto } from './dto/create/create-transaction-event-response.dto';
@@ -27,20 +26,19 @@ export class ProducerController {
     }
 
     @Post()
-    async createTransactionEvent(@Body() createTransactionEventDto: CreateTransactionEventDto, @Res({ passthrough: true }) response: Response) {
-        let statusCode: HttpStatus;
-        let result: CreateTransactionEventResponseDto | undefined | {};
+    async createTransactionEvent(@Body() createTransactionEventDto: CreateTransactionEventDto) {
+        const result = await this.producerService.createTransactionEvent(createTransactionEventDto);
 
-        result = await this.producerService.createTransactionEvent(createTransactionEventDto);
         if (result instanceof CreateTransactionEventResponseDto) {
-            statusCode = HttpStatus.CREATED
             this.logger.log(`Transaction ${result.transactionId} created! :)`);
         } else {
-            statusCode = HttpStatus.INTERNAL_SERVER_ERROR
             this.logger.log(`Transaction ${JSON.stringify(createTransactionEventDto)} not created! :(`);
-            result = {}
+            throw new HttpException({
+                status: HttpStatus.INTERNAL_SERVER_ERROR,
+                error: `Transaction ${JSON.stringify(createTransactionEventDto)} not created! :(`,
+            }, HttpStatus.INTERNAL_SERVER_ERROR); 
         }
 
-        response.status(statusCode).json(result)
+        return result;
     }
 }

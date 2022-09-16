@@ -3,9 +3,9 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PostgresService } from '@app/postgres';
 import { ConfigService } from '@nestjs/config';
 import { TransactionEventInstance } from 'apps/producer/src/entities/transaction-event.entity';
-import { PRODUCER_LOGGER_TOKEN } from 'apps/producer/src/producer.module';
 import { CreateTransactionEventDto } from '../../create/create-transaction-event.dto';
 import { CreateTransactionEventResponseDto } from '../../create/create-transaction-event-response.dto';
+import { PRODUCER_LOGGER_TOKEN } from 'apps/producer/src/producer.service';
 
 @Injectable()
 export class TransactionPostgreSqlDataSource implements TransactionEventDataSource {

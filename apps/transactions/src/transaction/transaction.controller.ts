@@ -1,15 +1,12 @@
 import {
     Controller, Get, Post, Body, Patch, Param, Delete, Res, HttpStatus,
-    Logger, UseInterceptors, ClassSerializerInterceptor
+    Logger, UseInterceptors, ClassSerializerInterceptor, Req, HttpException
 } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
-import { Response } from 'express';
 import { AppController } from '../app.controller';
-import { Transaction } from './entities/transaction.entity';
 import { UpdateTransactionDto } from './dto/update/update-transaction.dto';
 import { CreateTransactionDto } from './dto/create/create-transaction.dto';
 import { CreateTransactionResponseDto } from './dto/create/create-transaction-response.dto';
-import { UpdateTransactionResponseDto } from './dto/update/update-transaction-response.dto';
 import { ExcludeNullInterceptor } from '../util/exclude-null.interceptor';
 
 @Controller('transaction')
@@ -24,83 +21,71 @@ export class TransactionController {
     }
 
     @Get(':id')
-    async findOne(@Param('id') id: string, @Res({ passthrough: true }) response: Response) {
+    async findOne(@Param('id') id: string) {
         const transaction = await this.transactionService.findOne(id);
-        const isTransactionFound = transaction != undefined;
-        let statusCode: HttpStatus;
-        let result: Transaction | {}
 
-        if (isTransactionFound) {
+        if (transaction != undefined) {
             this.logger.log(`Transaction ${id} found! :)`);
-            statusCode = HttpStatus.OK;
-            result = transaction
         } else {
             this.logger.log(`Transaction ${id} not found! :(`);
-            statusCode = HttpStatus.NOT_FOUND;
-            result = {}
+            throw new HttpException({
+                status: HttpStatus.NOT_FOUND,
+                error: `Transaction ${id} not found! :(`,
+            }, HttpStatus.NOT_FOUND);
         }
 
-        response.status(statusCode).json(result);
+        return transaction;
     }
 
     @Post()
-    async create(@Body() createTransactionDto: CreateTransactionDto, @Res({ passthrough: true }) response: Response) {
-        let statusCode: HttpStatus;
-        let result: CreateTransactionResponseDto | undefined | {}
+    async create(@Body() createTransactionDto: CreateTransactionDto) {
+        let result: CreateTransactionResponseDto | undefined
 
         result = await this.transactionService.create(createTransactionDto);
         if (result instanceof CreateTransactionResponseDto) {
-            statusCode = HttpStatus.CREATED
             this.logger.log(`Transaction ${result.transactionId} created! :)`);
         } else {
-            statusCode = HttpStatus.INTERNAL_SERVER_ERROR
             this.logger.log(`Transaction ${JSON.stringify(createTransactionDto)} not created! :(`);
-            result = {}
+            throw new HttpException({
+                status: HttpStatus.INTERNAL_SERVER_ERROR,
+                error: `Transaction ${JSON.stringify(createTransactionDto)} not created! :(`,
+            }, HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        response.status(statusCode).json(result)
+        return result;
     }
 
     @Patch(':id')
-    async update(
-        @Param('id') id: string,
-        @Body() updateTransactionDto: UpdateTransactionDto,
-        @Res({ passthrough: true }) response: Response) {
+    async update(@Param('id') id: string, @Body() updateTransactionDto: UpdateTransactionDto) {
         const transaction = await this.transactionService.update(id, updateTransactionDto);
-        const isTransactionFound = transaction != undefined;
-        let statusCode: HttpStatus;
-        let result: UpdateTransactionResponseDto | {}
 
-        if (isTransactionFound) {
+        if (transaction != undefined) {
             this.logger.log(`Transaction ${id} updated! :)`);
-            statusCode = HttpStatus.OK;
-            result = transaction
         } else {
             this.logger.log(`Transaction ${id} not updated! :(`);
-            statusCode = HttpStatus.NOT_FOUND;
-            result = {}
+            throw new HttpException({
+                status: HttpStatus.NOT_FOUND,
+                error: `Transaction ${id} not updated! :(`,
+            }, HttpStatus.NOT_FOUND);
         }
 
-        response.status(statusCode).json(result);
+        return transaction;
     }
 
     @Delete(':id')
-    async remove(@Param('id') id: string, @Res({ passthrough: true }) response: Response) {
+    async remove(@Param('id') id: string) {
         const deletedTransaction = await this.transactionService.remove(id);
-        const isTransactionDeled = deletedTransaction != undefined;
-        let statusCode: HttpStatus;
-        let result: Transaction | {}
 
-        if (isTransactionDeled) {
+        if (deletedTransaction != undefined) {
             this.logger.log(`Transaction ${id} deleted! :)`);
-            statusCode = HttpStatus.OK;
-            result = deletedTransaction
         } else {
             this.logger.log(`Transaction ${id} not deleted! :(`);
-            statusCode = HttpStatus.NOT_FOUND;
-            result = {}
+            throw new HttpException({
+                status: HttpStatus.NOT_FOUND,
+                error: `Transaction ${id} not deleted! :(`,
+            }, HttpStatus.NOT_FOUND);
         }
 
-        response.status(statusCode).json(result);
+        return deletedTransaction;
     }
 }

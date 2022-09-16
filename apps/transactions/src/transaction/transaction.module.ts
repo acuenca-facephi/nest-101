@@ -4,7 +4,7 @@ import { TransactionController } from './transaction.controller';
 // import { TransactionMemoryDataSource } from './dto/datasource/memory/memory.transaction.datasource';
 import { TransactionPostgreSqlDataSource } from './dto/datasource/posgresql/postgresql.transaction.datasource';
 import { AppController } from '../app.controller';
-import { PostgresModule, PostgresService } from '@app/postgres';
+import { PostgresModule } from '@app/postgres';
 import { ConfigModule } from '@nestjs/config';
 import { APP_LOGGER_TOKEN } from '../app.service';
 
