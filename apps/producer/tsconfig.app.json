@@ -2,7 +2,7 @@
     "extends": "../../tsconfig.json",
     "compilerOptions": {
         "declaration": false,
-        "outDir": "../../dist/apps/transactions"
+        "outDir": "../../dist/apps/producer"
     },
     "include": [
         "src/**/*"

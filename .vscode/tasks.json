@@ -10,7 +10,19 @@
             },
             "presentation": {
                 "reveal": "silent",
-                "close": true
+                "close": false
+            }
+        },
+        {
+            "label": "producer-build",
+            "command": "npm run build",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}/apps/producer"
+            },
+            "presentation": {
+                "reveal": "silent",
+                "close": false
             }
         }
     ]

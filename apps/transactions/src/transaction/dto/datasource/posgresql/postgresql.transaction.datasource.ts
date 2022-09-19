@@ -1,4 +1,4 @@
-import { Transaction, TransactionInstance, TransactionProperties, TransactionPropertiesNames } from '../../../entities/transaction.entity';
+import { Transaction, TransactionInstance } from '../../../entities/transaction.entity';
 import { CreateTransactionResponseDto } from '../../create/create-transaction-response.dto';
 import { CreateTransactionDto } from '../../create/create-transaction.dto';
 import { UpdateTransactionResponseDto } from '../../update/update-transaction-response.dto';

@@ -1,23 +1,14 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "apps/nest-101/src",
+  "sourceRoot": "apps/transactions/src",
   "monorepo": true,
-  "root": "apps/nest-101",
+  "root": "apps/transactions",
   "compilerOptions": {
     "webpack": true,
-    "tsConfigPath": "apps/nest-101/tsconfig.app.json"
+    "tsConfigPath": "tsconfig.json"
   },
   "projects": {
-    "nest-101": {
-      "type": "application",
-      "root": "apps/nest-101",
-      "entryFile": "main",
-      "sourceRoot": "apps/nest-101/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/nest-101/tsconfig.app.json"
-      }
-    },
     "transactions": {
       "type": "application",
       "root": "apps/transactions",
@@ -34,6 +25,24 @@
       "sourceRoot": "libs/postgres/src",
       "compilerOptions": {
         "tsConfigPath": "libs/postgres/tsconfig.lib.json"
+      }
+    },
+    "producer": {
+      "type": "application",
+      "root": "apps/producer",
+      "entryFile": "main",
+      "sourceRoot": "apps/producer/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/producer/tsconfig.app.json"
+      }
+    },
+    "utils": {
+      "type": "library",
+      "root": "libs/utils",
+      "entryFile": "index",
+      "sourceRoot": "libs/utils/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/utils/tsconfig.lib.json"
       }
     }
   }

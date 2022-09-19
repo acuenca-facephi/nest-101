@@ -1,3 +1,4 @@
+import { Json } from 'apps/transactions/src/util/json';
 import { CreateTransactionResponseDto } from '../../../dto/create/create-transaction-response.dto';
 import { CreateTransactionDto } from '../../../dto/create/create-transaction.dto';
 import { UpdateTransactionResponseDto } from '../../../dto/update/update-transaction-response.dto';
@@ -22,7 +23,8 @@ export class TransactionMemoryDataSource implements TransactionDataSource {
     }
 
     create(createTransactionDto: CreateTransactionDto): CreateTransactionResponseDto {
-        const transactionToCreate = new Transaction(`${this.transactions.length + 1}`, createTransactionDto.time, createTransactionDto.customId);
+        const transactionToCreate = new Transaction(
+            `${this.transactions.length + 1}`, createTransactionDto.time, createTransactionDto.customId);
         this.transactions.push(transactionToCreate);
         return new CreateTransactionResponseDto(transactionToCreate.id as string);
     }
@@ -43,7 +45,7 @@ export class TransactionMemoryDataSource implements TransactionDataSource {
             updateTransactionResponse = new UpdateTransactionResponseDto(transactionToUpdate.id as string);
         } else
             updateTransactionResponse = undefined;
-        
+
         return updateTransactionResponse;
     }
 
