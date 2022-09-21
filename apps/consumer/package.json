@@ -1,5 +1,5 @@
 {
-  "name": "nest-101",
+  "name": "consumer",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -8,17 +8,17 @@
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "nest build",
-    "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "npm run build && nest start --watch",
-    "start:debug": "npm run build && nest start --debug --watch",
+    "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./apps/nest-101/test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
     "@nestjs/common": "^9.0.0",
@@ -32,7 +32,6 @@
     "class-validator": "^0.13.2",
     "dotenv": "^16.0.1",
     "pg": "^8.7.3",
-    "pg-promise": "^10.12.0",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",
@@ -70,7 +69,7 @@
       "json",
       "ts"
     ],
-    "rootDir": ".",
+    "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
@@ -78,15 +77,7 @@
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],
-    "coverageDirectory": "./coverage",
-    "testEnvironment": "node",
-    "roots": [
-      "<rootDir>/libs/",
-      "<rootDir>/apps/"
-    ],
-    "moduleNameMapper": {
-      "^@app/postgres(|/.*)$": "<rootDir>/libs/postgres/src/$1",
-      "^utils/utils(|/.*)$": "<rootDir>/libs/utils/src/$1"
-    }
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node"
   }
 }

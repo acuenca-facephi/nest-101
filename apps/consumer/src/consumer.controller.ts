@@ -3,17 +3,17 @@ import {
     Inject, Logger, Post, Res, UseInterceptors
 } from '@nestjs/common';
 import { CreateTransactionEventDto } from './dto/create/create-transaction-event.dto';
-import { ProducerService, PRODUCER_LOGGER_TOKEN } from './producer.service';
+import { ConsumerService, CONSUMER_LOGGER_TOKEN } from './consumer.service';
 import { Response } from 'express';
 import { ExcludeNullInterceptor } from 'utils/utils';
 import { CreateTransactionEventResponseDto } from './dto/create/create-transaction-event-response.dto';
 
 @Controller('transaction-event')
 @UseInterceptors(ClassSerializerInterceptor, ExcludeNullInterceptor)
-export class ProducerController {
+export class ConsumerController {
     constructor(
-        private readonly producerService: ProducerService,
-        @Inject(PRODUCER_LOGGER_TOKEN) private logger: Logger
+        private readonly consumerService: ConsumerService,
+        @Inject(CONSUMER_LOGGER_TOKEN) private logger: Logger
     ) { }
 
     private status(): string {
@@ -27,15 +27,15 @@ export class ProducerController {
 
     @Post()
     async createTransactionEvent(@Body() createTransactionEventDto: CreateTransactionEventDto) {
-        const result = await this.producerService.createTransactionEvent(createTransactionEventDto);
+        const result = await this.consumerService.createTransactionEvent(createTransactionEventDto);
 
         if (result instanceof CreateTransactionEventResponseDto) {
             this.logger.log(`Transaction ${result.transactionId} created! :)`);
         } else {
-            this.logger.log(`Transaction event ${JSON.stringify(createTransactionEventDto)} not created! :(`);
+            this.logger.log(`Transaction ${JSON.stringify(createTransactionEventDto)} not created! :(`);
             throw new HttpException({
                 status: HttpStatus.INTERNAL_SERVER_ERROR,
-                error: `Transaction event ${JSON.stringify(createTransactionEventDto)} not created! :(`,
+                error: `Transaction ${JSON.stringify(createTransactionEventDto)} not created! :(`,
             }, HttpStatus.INTERNAL_SERVER_ERROR); 
         }
 
