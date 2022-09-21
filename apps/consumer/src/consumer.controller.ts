@@ -7,6 +7,7 @@ import { ConsumerService, CONSUMER_LOGGER_TOKEN } from './consumer.service';
 import { Response } from 'express';
 import { ExcludeNullInterceptor } from 'utils/utils';
 import { CreateTransactionEventResponseDto } from './dto/create/create-transaction-event-response.dto';
+import { UpdateIntervalDto } from './dto/update/update-interval.dto';
 
 @Controller('transaction-event')
 @UseInterceptors(ClassSerializerInterceptor, ExcludeNullInterceptor)
@@ -26,17 +27,17 @@ export class ConsumerController {
     }
 
     @Post()
-    async createTransactionEvent(@Body() createTransactionEventDto: CreateTransactionEventDto) {
-        const result = await this.consumerService.createTransactionEvent(createTransactionEventDto);
+    async postNewQueryInterval(@Body() newQueryInterval: UpdateIntervalDto) {
+        const result = this.consumerService.changeQueryInterval(newQueryInterval);
 
-        if (result instanceof CreateTransactionEventResponseDto) {
-            this.logger.log(`Transaction ${result.transactionId} created! :)`);
+        if (result.intervalUpdated) {
+            this.logger.log(result.resultMessage);
         } else {
-            this.logger.log(`Transaction ${JSON.stringify(createTransactionEventDto)} not created! :(`);
+            this.logger.error(result.resultMessage);
             throw new HttpException({
-                status: HttpStatus.INTERNAL_SERVER_ERROR,
-                error: `Transaction ${JSON.stringify(createTransactionEventDto)} not created! :(`,
-            }, HttpStatus.INTERNAL_SERVER_ERROR); 
+                status: HttpStatus.UNPROCESSABLE_ENTITY,
+                error: result.resultMessage,
+            }, HttpStatus.UNPROCESSABLE_ENTITY); 
         }
 
         return result;
