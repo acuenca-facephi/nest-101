@@ -1,7 +1,7 @@
 import { PostgresModule } from '@app/postgres';
 import { Logger, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { TransactionPostgreSqlDataSource } from './dto/datasource/posgresql/postgresql.transaction.datasource';
+import { TransactionEventPostgreSqlDataSource } from './dto/datasource/posgresql/postgresql.transaction.datasource';
 import { ProducerController } from './producer.controller';
 import { ProducerService, PRODUCER_LOGGER_TOKEN, PRODUCER_TRANSACTION_EVENT_DATA_SOURCE_TOKEN } from './producer.service';
 
@@ -18,7 +18,7 @@ import { ProducerService, PRODUCER_LOGGER_TOKEN, PRODUCER_TRANSACTION_EVENT_DATA
         },
         {
             provide: PRODUCER_TRANSACTION_EVENT_DATA_SOURCE_TOKEN,
-            useClass: TransactionPostgreSqlDataSource
+            useClass: TransactionEventPostgreSqlDataSource
         },
         ProducerService
     ]

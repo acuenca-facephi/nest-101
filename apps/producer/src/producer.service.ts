@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { CreateTransactionEventResponseDto } from './dto/create/create-transaction-event-response.dto';
-import { CreateTransactionEventDto } from './dto/create/create-transaction-event.dto';
+import { CreateEventResponseDto } from './dto/create/create-event-response.dto';
+import { CreateEventDto } from './dto/create/create-event.dto';
 import { TransactionEventDataSource } from './dto/datasource/transaction.datasource';
 
 export const PRODUCER_LOGGER_TOKEN = Symbol('PRODUCER_LOGGER_TOKEN');
@@ -21,12 +21,12 @@ export class ProducerService {
         return this.transactionEventDataSource.getTransactionByCustomerId(transactionId);
     }
 
-    async createTransactionEvent(
-        createTransactionDto: CreateTransactionEventDto
-    ): Promise<CreateTransactionEventResponseDto | undefined> {
+    async createEvent(
+        createTransactionDto: CreateEventDto
+    ): Promise<CreateEventResponseDto | undefined> {
         if (await this.getTransactionByCustomerId(createTransactionDto.customId) != undefined)
             return this.transactionEventDataSource.create(createTransactionDto);
         else
-            throw new Error('Can not create a transaction event of an unexisting transaction.');
+            throw new Error('Can not create an event of an unexisting transaction.');
     }
 }

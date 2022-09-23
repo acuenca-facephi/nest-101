@@ -3,6 +3,7 @@ import { Pool } from 'pg';
 import { ObjectUtils, Json, UUID } from 'utils/utils';
 import * as pgPromise from 'pg-promise';
 import pg from 'pg-promise/typescript/pg-subset';
+import { PostgresConfig } from './postgres-config';
 const pgp = pgPromise({});
 
 @Injectable()
@@ -15,22 +16,37 @@ export class PostgresService {
     private Logger: Logger;
     private PgPromiseDb: pgPromise.IDatabase<{}, pg.IClient>;
 
+    initialize(postgresConfig: PostgresConfig): void;
     initialize(databaseHost: string, databaseName: string, databaseUser: string,
         databasePassword: string, databasePort: number, tableName: string, primaryKeyName: string,
-        instanceOfObject: object, logger: Logger) {
-        this.Logger = logger;
-        this.TableName = tableName;
-        this.TablePrimaryKeyName = primaryKeyName;
+        instanceOfObject: object, logger: Logger): void;
+    initialize(databaseHost: string | PostgresConfig, databaseName?: string, databaseUser?: string,
+        databasePassword?: string, databasePort?: number, tableName?: string, primaryKeyName?: string,
+        instanceOfObject?: object, logger?: Logger
+    ) {
+        let postgresConfig: PostgresConfig;
+        if (typeof databaseHost == 'object') {
+            postgresConfig = arguments[0];
+        } else {
+            postgresConfig = {
+                databaseHost: databaseHost, databaseName: databaseName!, databaseUser: databaseUser!,
+                databasePassword: databasePassword!, databasePort: databasePort!, tableName: tableName!, primaryKeyName: primaryKeyName!,
+                instanceOfObject: instanceOfObject!, logger: logger!
+            }
+        }
+        this.Logger = postgresConfig.logger;
+        this.TableName = postgresConfig.tableName;
+        this.TablePrimaryKeyName = postgresConfig.primaryKeyName;
         const configurationDbConnection = {
-            user: databaseUser,
-            host: databaseHost,
-            database: databaseName,
-            password: databasePassword,
-            port: databasePort,
+            user: postgresConfig.databaseUser,
+            host: postgresConfig.databaseHost,
+            database: postgresConfig.databaseName,
+            password: postgresConfig.databasePassword,
+            port: postgresConfig.databasePort,
         };
         this.Pool = new Pool(configurationDbConnection);
         this.PgPromiseDb = pgp(configurationDbConnection)
-        this.setObjectInstance(instanceOfObject);
+        this.setObjectInstance(postgresConfig.instanceOfObject);
     }
 
     setObjectInstance(instanceOfObject: object) {

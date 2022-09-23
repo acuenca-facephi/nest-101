@@ -1,9 +1,9 @@
-import { TransactionEvent } from "../../entities/transaction-event.entity"
-import { CreateTransactionEventResponseDto } from "../create/create-transaction-event-response.dto"
-import { CreateTransactionEventDto } from "../create/create-transaction-event.dto"
+import { Transaction } from "../../entities/transaction.entity"
+import { CreateEventResponseDto } from "../create/create-event-response.dto"
+import { CreateEventDto } from "../create/create-event.dto"
 
 export interface TransactionEventDataSource {
-    getTransactionByCustomerId(transactionId: string): TransactionEvent | Promise<TransactionEvent | undefined> | undefined
-    create(createTransactionDto: CreateTransactionEventDto): CreateTransactionEventResponseDto | undefined | Promise<CreateTransactionEventResponseDto | undefined>
+    getTransactionByCustomerId(transactionId: string): Transaction | Promise<Transaction | undefined> | undefined
+    create(createTransactionDto: CreateEventDto): CreateEventResponseDto | undefined | Promise<CreateEventResponseDto | undefined>
 }
 
