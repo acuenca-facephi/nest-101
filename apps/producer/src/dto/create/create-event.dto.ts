@@ -1,3 +1,3 @@
-import { Transaction } from '../../entities/transaction.entity';
+import { Event } from "../../entities/event.entity";
 
-export class CreateEventDto extends Transaction {}
+export class CreateEventDto extends Event {}

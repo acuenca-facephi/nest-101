@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { Transaction, TransactionInstance } from 'apps/producer/src/entities/transaction.entity';
 import { CreateEventDto } from '../../create/create-event.dto';
 import { CreateEventResponseDto } from '../../create/create-event-response.dto';
-import { PRODUCER_LOGGER_TOKEN } from 'apps/producer/src/producer.service';
+import { EVENT_TABLE_TOKEN, PRODUCER_LOGGER_TOKEN, TRANSACTION_TABLE_TOKEN } from 'apps/producer/src/producer.service';
 import { EventInstance } from 'apps/producer/src/entities/event.entity';
 
 @Injectable()
@@ -17,8 +17,8 @@ export class TransactionEventPostgreSqlDataSource implements TransactionEventDat
     private readonly TransactionPostgresTable: PostgresService;
     private readonly EventPostgresTable: PostgresService;
 
-    constructor(@Inject(PostgresService) transactionPostgresService: PostgresService,
-        @Inject(PostgresService) eventPostgresService: PostgresService,
+    constructor(@Inject(TRANSACTION_TABLE_TOKEN) transactionPostgresService: PostgresService,
+        @Inject(EVENT_TABLE_TOKEN) eventPostgresService: PostgresService,
         @Inject(ConfigService) configService: ConfigService,
         @Inject(PRODUCER_LOGGER_TOKEN) logger: Logger
     ) {
@@ -50,12 +50,12 @@ export class TransactionEventPostgreSqlDataSource implements TransactionEventDat
             throw new Error(`The row ${JSON.stringify(transactionEventObject)} it isn't a Transaction.`);
     }
 
-    async getTransactionByCustomerId(customerId: string): Promise<Transaction | undefined> {
-        const result = await this.TransactionPostgresTable.getWhere({ 'customId': customerId, data: null, type: null });
+    async getTransactionByTransactionId(transactionId: string): Promise<Transaction | undefined> {
+        const result = await this.TransactionPostgresTable.getWhere({ 'id': transactionId });
 
-        var transactionEvent = typeof result == 'object' ? this.mapObjectToTransactionEvent(result[0]) : result;
+        var transaction = typeof result == 'object' ? this.mapObjectToTransactionEvent(result[0]) : result;
 
-        return transactionEvent;
+        return transaction;
     }
 
     async create(createTransactionEventDto: CreateEventDto): Promise<CreateEventResponseDto | undefined> {
