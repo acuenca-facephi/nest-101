@@ -2,53 +2,85 @@ import { TransactionEventDataSource } from '../transaction.datasource';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PostgresService } from '@app/postgres';
 import { ConfigService } from '@nestjs/config';
-import { TransactionEvent, TransactionEventInstance } from 'apps/consumer/src/entities/transaction-event.entity';
-import { CreateTransactionEventDto } from '../../create/create-transaction-event.dto';
-import { CreateTransactionEventResponseDto } from '../../create/create-transaction-event-response.dto';
-import { CONSUMER_LOGGER_TOKEN } from 'apps/consumer/src/consumer.service';
-import { Json } from 'utils/utils';
+import { CONSUMER_LOGGER_TOKEN, EVENT_TABLE_TOKEN, TRANSACTION_TABLE_TOKEN } from 'apps/consumer/src/consumer.service';
+import { Transaction, TransactionInstance } from 'apps/consumer/src/entities/transaction.entity';
+import { EventInstance } from 'apps/consumer/src/entities/event.entity';
+import { UpdateEventDto } from '../../update/update-event.dto';
+import { UpdateEventResponseDto } from '../../update/update-event-response.dto';
+import { Event } from 'apps/consumer/src/entities/event.entity';
 
 @Injectable()
 export class TransactionPostgreSqlDataSource implements TransactionEventDataSource {
 
-    private readonly TableName: string = 'transaction';
+    private readonly TransactionTableName: string = 'transaction';
+    private readonly EventTableName: string = 'event';
     private readonly TablePrimaryKeyName: string = 'id';
-    private readonly PostgresTable: PostgresService;
+    private readonly TransactionPostgresTable: PostgresService;
+    private readonly EventPostgresTable: PostgresService;
 
-    constructor(@Inject(PostgresService) postgresService: PostgresService,
+    constructor(@Inject(TRANSACTION_TABLE_TOKEN) transactionPostgresService: PostgresService,
+        @Inject(EVENT_TABLE_TOKEN) eventPostgresService: PostgresService,
         @Inject(ConfigService) configService: ConfigService,
         @Inject(CONSUMER_LOGGER_TOKEN) logger: Logger
     ) {
-        this.PostgresTable = postgresService;
-        this.PostgresTable.initialize(
-            configService.get<string>('DATABASE_HOST')!, configService.get<string>('DATABASE_NAME')!,
-            configService.get<string>('DATABASE_USER')!, configService.get<string>('DATABASE_PASSWORD')!,
-            configService.get<number>('DATABASE_PORT')!, this.TableName, this.TablePrimaryKeyName,
-            TransactionEventInstance, logger);
+        const DATABASE_CONFIGURATION = {
+            databaseHost: configService.get<string>('DATABASE_HOST')!, databaseName: configService.get<string>('DATABASE_NAME')!,
+            databaseUser: configService.get<string>('DATABASE_USER')!, databasePassword: configService.get<string>('DATABASE_PASSWORD')!,
+            databasePort: configService.get<number>('DATABASE_PORT')!
+        };
+
+        this.TransactionPostgresTable = transactionPostgresService;
+        this.TransactionPostgresTable.initialize({
+            ...DATABASE_CONFIGURATION, tableName: this.TransactionTableName, primaryKeyName: this.TablePrimaryKeyName,
+            instanceOfObject: TransactionInstance, logger: logger
+        });
+        this.EventPostgresTable = eventPostgresService;
+        this.EventPostgresTable.initialize({
+            ...DATABASE_CONFIGURATION, tableName: this.EventTableName, primaryKeyName: this.TablePrimaryKeyName,
+            instanceOfObject: EventInstance, logger: logger
+        });
     }
 
-    private mapObjectToTransactionEvent(transactionEventObject: object): TransactionEvent {
-        var transactionEvent: TransactionEvent = new TransactionEvent('', '', '', '', new Json({}));
-        Object.assign(transactionEvent, transactionEventObject);
+    private mapObjectToTransaction(transactionObject: object): Transaction {
+        var transaction: Transaction = new Transaction('', '', '');
+        Object.assign(transaction, transactionObject);
 
-        if (transactionEvent.id && transactionEvent.time && transactionEvent.customId)
-            return transactionEvent;
+        if (transaction.id && transaction.time && transaction.customId)
+            return transaction;
         else
-            throw new Error(`The row ${JSON.stringify(transactionEventObject)} it isn't a Transaction.`);
+            throw new Error(`The row ${JSON.stringify(transactionObject)} it isn't a Transaction.`);
     }
 
-    async getAllTransactions(): Promise<TransactionEvent[] | undefined> {
-        const result = await this.PostgresTable.getWhere({ data: null, type: null });
+    private mapObjectToEvent(eventObject: object): Event {
+        var event: Event = new Event('', '', '', '', {});
+        Object.assign(event, eventObject);
 
-        var transactionEvents = result?.map(this.mapObjectToTransactionEvent);
-
-        return transactionEvents;
+        if (event.id && event.time && event.transactionId && event.type, event.data)
+            return event;
+        else
+            throw new Error(`The row ${JSON.stringify(eventObject)} it isn't an Event.`);
     }
 
-    async updateTransactionsByTransactionId(createTransactionEventDto: CreateTransactionEventDto): Promise<CreateTransactionEventResponseDto | undefined> {
-        const result = await this.PostgresTable.create(createTransactionEventDto);
+    async getAllTransactions(): Promise<Transaction[] | undefined> {
+        const result = await this.TransactionPostgresTable.getAll();
 
-        var transactionResponse = result != undefined ? new CreateTransactionEventResponseDto(result) : result;
+        var transactions = result?.map(this.mapObjectToTransaction);
+
+        return transactions;
+    }
+
+    async getAllTransactionEvents(transactionId: string): Promise<Event[] | undefined> {
+        const result = await this.EventPostgresTable.getWhere({ transactionId: transactionId });
+
+        var events = result?.map(this.mapObjectToEvent);
+
+        return events;
+    }
+
+    async updateEventsByTransactionId(eventId: string, updateEventDto: UpdateEventDto): Promise<UpdateEventResponseDto | undefined> {
+        const result = await this.EventPostgresTable.update(eventId, updateEventDto);
+
+        var transactionResponse = result != undefined ? new UpdateEventResponseDto(result) : result;
 
         return transactionResponse;
     }

@@ -1,9 +1,9 @@
-import { PostgresModule } from '@app/postgres';
+import { PostgresModule, PostgresService } from '@app/postgres';
 import { Logger, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TransactionPostgreSqlDataSource } from './dto/datasource/posgresql/postgresql.transaction.datasource';
 import { ConsumerController } from './consumer.controller';
-import { ConsumerService, CONSUMER_LOGGER_TOKEN, CONSUMER_TRANSACTION_EVENT_DATA_SOURCE_TOKEN } from './consumer.service';
+import { ConsumerService, CONSUMER_LOGGER_TOKEN, CONSUMER_TRANSACTION_EVENT_DATA_SOURCE_TOKEN, EVENT_TABLE_TOKEN, TRANSACTION_TABLE_TOKEN } from './consumer.service';
 
 @Module({
     imports: [
@@ -19,6 +19,14 @@ import { ConsumerService, CONSUMER_LOGGER_TOKEN, CONSUMER_TRANSACTION_EVENT_DATA
         {
             provide: CONSUMER_TRANSACTION_EVENT_DATA_SOURCE_TOKEN,
             useClass: TransactionPostgreSqlDataSource
+        },
+        {
+            provide: EVENT_TABLE_TOKEN,
+            useClass: PostgresService
+        },
+        {
+            provide: TRANSACTION_TABLE_TOKEN,
+            useClass: PostgresService
         },
         ConsumerService
     ]

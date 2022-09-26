@@ -16,6 +16,12 @@ export class PostgresService {
     private Logger: Logger;
     private PgPromiseDb: pgPromise.IDatabase<{}, pg.IClient>;
 
+    /* TODO: Support two string arrays:
+        - primaryKeyNames
+        - foreignKeyNames: [fieldName: string, foreignTableName: string][]
+        This is to support multiple primary keys and foreign keys. If the 
+        foreign table does not exists, raise Error.
+    */
     initialize(postgresConfig: PostgresConfig): void;
     initialize(databaseHost: string, databaseName: string, databaseUser: string,
         databasePassword: string, databasePort: number, tableName: string, primaryKeyName: string,
@@ -267,7 +273,7 @@ export class PostgresService {
         return result;
     }
 
-    async update(id: string, objectProperties: object): Promise<any | undefined> {
+    async update(id: any, objectProperties: object): Promise<any | undefined> {
         var result: any | undefined;
         var updateText: string = '';
         const queryValues = [];

@@ -14,7 +14,7 @@ export class Interval {
     }
 
     setInterval(newInterval: number): boolean {
-        if (newInterval > this.MIN_INTERVAL && newInterval < this.MAX_INTERVAL) {
+        if (newInterval >= this.MIN_INTERVAL && newInterval <= this.MAX_INTERVAL) {
             this.interval_time = newInterval;
             return true;
         } else { return false; }

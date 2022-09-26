@@ -1,12 +1,9 @@
 import {
     Body, ClassSerializerInterceptor, Controller, Get, HttpException, HttpStatus,
-    Inject, Logger, Post, Res, UseInterceptors
+    Inject, Logger, Post, UseInterceptors
 } from '@nestjs/common';
-import { CreateTransactionEventDto } from './dto/create/create-transaction-event.dto';
 import { ConsumerService, CONSUMER_LOGGER_TOKEN } from './consumer.service';
-import { Response } from 'express';
 import { ExcludeNullInterceptor } from 'utils/utils';
-import { CreateTransactionEventResponseDto } from './dto/create/create-transaction-event-response.dto';
 import { UpdateIntervalDto } from './dto/update/update-interval.dto';
 
 @Controller('transaction-event')
