@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TransactionEventDataSource } from './dto/datasource/transaction.datasource';
 import { UpdateEventDto } from './dto/update/update-event.dto';
@@ -16,13 +16,15 @@ export const TRANSACTION_TABLE_TOKEN = Symbol('PRODUCER_TRANSACTION_EVENT_TOKEN'
 export class ConsumerService {
 
     private transactionEventDataSource: TransactionEventDataSource;
-
+    private logger: Logger;
     private queryInterval: Interval;
 
     constructor(
         @Inject(CONSUMER_TRANSACTION_EVENT_DATA_SOURCE_TOKEN) transactionEventDataSource: TransactionEventDataSource,
-        @Inject(ConfigService) configService: ConfigService
+        @Inject(ConfigService) configService: ConfigService,
+        @Inject(CONSUMER_LOGGER_TOKEN) logger: Logger
     ) {
+        this.logger = logger;
         this.transactionEventDataSource = transactionEventDataSource;
         this.queryInterval = new Interval(
             parseInt(configService.get<string>('MIN_INTERVAL_MS')!),
@@ -42,11 +44,12 @@ export class ConsumerService {
             updateMessage =
                 `Interval not updated! :( Min interval: ${this.queryInterval.MIN_INTERVAL} Max interval: ${this.queryInterval.MAX_INTERVAL}`;
 
+        this.logger.log(updateMessage);
         return new UpdateIntervalResponseDto(intervalUpdated, updateMessage);
     }
 
     private consumerLoop() {
-        setInterval(async () => {
+        setTimeout(async () => {
             const result = await this.transactionEventDataSource.getAllTransactions();
             const transactions = result != undefined ? result : [];
             for (let i = 0; i < transactions.length; i++) {
@@ -61,8 +64,10 @@ export class ConsumerService {
                         data: { 'status': 'CONSUMED' }
                     };
                     this.transactionEventDataSource.updateEventsByTransactionId(event.id, eventUpdated);
+                    this.logger.log(`${eventUpdated.time} - Event ${event.id} consumed.`);
                 }
             }
+            this.consumerLoop();
         }, this.queryInterval.interval);
     }
 }

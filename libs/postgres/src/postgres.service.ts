@@ -19,8 +19,8 @@ export class PostgresService {
     /* TODO: Support two string arrays:
         - primaryKeyNames
         - foreignKeyNames: [fieldName: string, foreignTableName: string][]
-        This is to support multiple primary keys and foreign keys. If the 
-        foreign table does not exists, raise Error.
+        This is to support multiple primary keys and foreign keys. 
+        If the foreign table does not exists, raise Error.
     */
     initialize(postgresConfig: PostgresConfig): void;
     initialize(databaseHost: string, databaseName: string, databaseUser: string,

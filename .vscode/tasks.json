@@ -34,7 +34,7 @@
             },
             "presentation": {
                 "reveal": "silent",
-                "close": false
+                "close": true
             }
         }
     ]
