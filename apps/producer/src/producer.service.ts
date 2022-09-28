@@ -25,10 +25,10 @@ export class ProducerService {
     }
 
     async createEvent(
-        createTransactionDto: CreateEventDto
+        createEventDto: CreateEventDto
     ): Promise<CreateEventResponseDto | undefined> {
-        if (await this.getTransactionByTransactionId(createTransactionDto.transactionId) != undefined)
-            return this.transactionEventDataSource.create(createTransactionDto);
+        if (await this.getTransactionByTransactionId(createEventDto.transactionId) != undefined)
+            return this.transactionEventDataSource.create(createEventDto);
         else
             throw new Error('Can not create an event of an unexisting transaction.');
     }

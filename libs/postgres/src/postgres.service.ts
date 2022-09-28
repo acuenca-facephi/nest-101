@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Pool } from 'pg';
+import { Pool, QueryResult } from 'pg';
 import { ObjectUtils, Json, UUID } from 'utils/utils';
 import * as pgPromise from 'pg-promise';
 import pg from 'pg-promise/typescript/pg-subset';
@@ -14,7 +14,6 @@ export class PostgresService {
     private ObjectProperties: [fieldName: string, fieldType: any][];
     private ObjectPropertyNames: string[];
     private Logger: Logger;
-    private PgPromiseDb: pgPromise.IDatabase<{}, pg.IClient>;
 
     /* TODO: Support two string arrays:
         - primaryKeyNames
@@ -51,7 +50,6 @@ export class PostgresService {
             port: postgresConfig.databasePort,
         };
         this.Pool = new Pool(configurationDbConnection);
-        this.PgPromiseDb = pgp(configurationDbConnection)
         this.setObjectInstance(postgresConfig.instanceOfObject);
     }
 
@@ -206,6 +204,12 @@ export class PostgresService {
     }
 
     async getWhere(objectToMatch: object): Promise<object[] | undefined> {
+        /**
+         * ------------------------------ TODO ------------------------------
+         * - Add support to change between AND, OR, IN, ALL and ANY.
+         * - Add support to change the comparator operators (=, !=, <, >, <=, >=, IS, IS NOT).
+         * - Add support to correlated and nested queries.
+         */
         const propertiesToMatch = Object.entries(objectToMatch).filter(entry => this.ObjectPropertyNames.includes(entry[0]));
         var result: object[] | undefined;
         var whereText: string = '';
@@ -219,16 +223,15 @@ export class PostgresService {
             for (let index = 0; index < propertiesToMatch.length; index++) {
                 const propertyToMatch = propertiesToMatch[index][0];
                 const valueToMatch = propertiesToMatch[index][1];
-                const comparator = valueToMatch == null ? ' IS ' : '=';
-                // TODO: Add method param to change between AND and OR operators (all or any).
+                const operator = valueToMatch == null ? ' IS ' : '=';
                 const textEnd = index < propertiesToMatch.length - 1 ? ' AND ' : '';
-                whereText += `"${propertyToMatch}"${comparator}$${index + 1}${textEnd}`;
+                whereText += `"${propertyToMatch}"${operator}$${index + 1}${textEnd}`;
                 queryValues.push(valueToMatch);
             }
-            const queryText = `SELECT * FROM ${this.TableName} WHERE ${whereText};`;
+            const query = pgp.as.format(`SELECT * FROM ${this.TableName} WHERE ${whereText};`, queryValues);
 
-            const queryResult = await this.PgPromiseDb.query(queryText, queryValues);
-            var result = queryResult.length > 0 ? queryResult as object[] : undefined;
+            const queryResult = await this.Pool.query(query);
+            var result = queryResult.rowCount > 0 ? queryResult.rows as object[] : undefined;
         } catch (error) {
             this.Logger.error(error.stack);
             result = undefined;
@@ -314,6 +317,20 @@ export class PostgresService {
         try {
             const queryResult = await this.Pool.query(query);
             result = queryResult.rows[0];
+        } catch (error) {
+            this.Logger.error(error.stack);
+            result = undefined;
+        }
+
+        return result;
+    }
+
+    async rawQuery(queryText: string, queryValues: Array<any> = []): Promise<QueryResult | undefined> {
+        var result: QueryResult | undefined;
+        var query = pgp.as.format(queryText, queryValues);
+
+        try {
+            result = await this.Pool.query(query);;
         } catch (error) {
             this.Logger.error(error.stack);
             result = undefined;

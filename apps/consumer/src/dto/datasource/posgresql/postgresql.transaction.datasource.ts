@@ -5,9 +5,11 @@ import { ConfigService } from '@nestjs/config';
 import { CONSUMER_LOGGER_TOKEN, EVENT_TABLE_TOKEN, TRANSACTION_TABLE_TOKEN } from 'apps/consumer/src/consumer.service';
 import { Transaction, TransactionInstance } from 'apps/consumer/src/entities/transaction.entity';
 import { EventInstance } from 'apps/consumer/src/entities/event.entity';
-import { UpdateEventDto } from '../../update/update-event.dto';
-import { UpdateEventResponseDto } from '../../update/update-event-response.dto';
 import { Event } from 'apps/consumer/src/entities/event.entity';
+import { UpdateTransactionResponseDto } from '../../update/update-transaction-response.dto';
+import { UpdateTransactionDto } from '../../update/update-transaction.dto';
+import { UpdateEventResponseDto } from '../../update/update-event-response.dto';
+import { UpdateEventDto } from '../../update/update-event.dto';
 
 @Injectable()
 export class TransactionPostgreSqlDataSource implements TransactionEventDataSource {
@@ -61,27 +63,38 @@ export class TransactionPostgreSqlDataSource implements TransactionEventDataSour
             throw new Error(`The row ${JSON.stringify(eventObject)} it isn't an Event.`);
     }
 
-    async getAllTransactions(): Promise<Transaction[] | undefined> {
-        const result = await this.TransactionPostgresTable.getAll();
+    async getAllTransactionsWithEvents(): Promise<Transaction[] | undefined> {
+        const result = await this.TransactionPostgresTable.rawQuery(
+            `SELECT *
+            FROM transaction
+            WHERE id::VARCHAR IN(
+                SELECT "transactionId"
+                FROM event
+                GROUP BY "transactionId");`
+        );
 
-        var transactions = result?.map(this.mapObjectToTransaction);
+        var transactions = result?.rows?.map(this.mapObjectToTransaction);
 
         return transactions;
     }
 
     async getAllTransactionEvents(transactionId: string): Promise<Event[] | undefined> {
-        const result = await this.EventPostgresTable.getWhere({ transactionId: transactionId });
+        const result = await this.EventPostgresTable.getWhere({ transactionId: transactionId, consumed: false });
 
         var events = result?.map(this.mapObjectToEvent);
 
         return events;
     }
 
-    async updateEventsByTransactionId(eventId: string, updateEventDto: UpdateEventDto): Promise<UpdateEventResponseDto | undefined> {
+    async updateTransaction(transactionId: string, updateTransactionDto: UpdateTransactionDto): Promise<UpdateTransactionResponseDto | undefined> {
+        const result = await this.TransactionPostgresTable.update(transactionId, updateTransactionDto);
+
+        return result != undefined ? new UpdateTransactionResponseDto(result) : result;
+    }
+
+    async updateEvent(eventId: string, updateEventDto: UpdateEventDto): Promise<UpdateEventResponseDto | undefined> {
         const result = await this.EventPostgresTable.update(eventId, updateEventDto);
 
-        var transactionResponse = result != undefined ? new UpdateEventResponseDto(result) : result;
-
-        return transactionResponse;
+        return result != undefined ? new UpdateEventResponseDto(result) : result;
     }
 }

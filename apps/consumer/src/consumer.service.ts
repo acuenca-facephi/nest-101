@@ -4,6 +4,7 @@ import { TransactionEventDataSource } from './dto/datasource/transaction.datasou
 import { UpdateEventDto } from './dto/update/update-event.dto';
 import { UpdateIntervalResponseDto } from './dto/update/update-interval-response.dto';
 import { UpdateIntervalDto } from './dto/update/update-interval.dto';
+import { UpdateTransactionDto } from './dto/update/update-transaction.dto';
 import { Event } from './entities/event.entity';
 import { Interval } from './entities/interval.entity';
 
@@ -50,7 +51,7 @@ export class ConsumerService {
 
     private consumerLoop() {
         setTimeout(async () => {
-            const result = await this.transactionEventDataSource.getAllTransactions();
+            const result = await this.transactionEventDataSource.getAllTransactionsWithEvents();
             const transactions = result != undefined ? result : [];
             for (let i = 0; i < transactions.length; i++) {
                 const transaction = transactions[i];
@@ -58,16 +59,13 @@ export class ConsumerService {
                 const transactionEvents: Event[] = result != undefined ? result : [];
                 for (let j = 0; j < transactionEvents.length; j++) {
                     const event = transactionEvents[j];
-                    const eventUpdated: UpdateEventDto = {
-                        time: new Date().toISOString(),
-                        type: 'com.facephi.nest101.status.consumed',
-                        data: { 'status': 'CONSUMED' }
-                    };
-                    this.transactionEventDataSource.updateEventsByTransactionId(event.id, eventUpdated);
-                    this.logger.log(`${eventUpdated.time} - Event ${event.id} consumed.`);
+                    const transactionUpdated: UpdateTransactionDto = event.data;
+                    this.transactionEventDataSource.updateTransaction(transaction.id, transactionUpdated);
+                    this.transactionEventDataSource.updateEvent(event.id, { consumed: true })
+                    this.logger.log(`Event ${event.id} consumed.`);
                 }
             }
-            this.consumerLoop();
+            this.consumerLoop()
         }, this.queryInterval.interval);
     }
 }

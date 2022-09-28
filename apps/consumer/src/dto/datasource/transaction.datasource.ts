@@ -1,12 +1,15 @@
 import { Transaction } from "../../entities/transaction.entity"
-import { UpdateEventDto } from "../../dto/update/update-event.dto"
-import { UpdateEventResponseDto } from "../update/update-event-response.dto"
 import { Event } from '../../entities/event.entity';
+import { UpdateTransactionDto } from "../update/update-transaction.dto";
+import { UpdateTransactionResponseDto } from "../update/update-transaction-response.dto";
+import { UpdateEventDto } from "../update/update-event.dto";
+import { UpdateEventResponseDto } from "../update/update-event-response.dto";
 
 
 export interface TransactionEventDataSource {
-    getAllTransactions(): Transaction[] | undefined | Promise<Transaction[] | undefined>
-    getAllTransactionEvents(transactionId: string): Promise<Event[] | undefined>
-    updateEventsByTransactionId(eventId: string, UpdateEventDto: UpdateEventDto): Promise<UpdateEventResponseDto | undefined> | UpdateEventResponseDto | undefined
+    getAllTransactionsWithEvents(): Transaction[] | undefined | Promise<Transaction[] | undefined>
+    getAllTransactionEvents(transactionId: string): Promise<Event[] | undefined> | Event[] | undefined
+    updateTransaction(transactionId: string, updateTransactionDto: UpdateTransactionDto): UpdateTransactionResponseDto | Promise<UpdateTransactionResponseDto | undefined> | undefined
+    updateEvent(eventId: string, updateEventDto: UpdateEventDto): Promise<UpdateEventResponseDto | undefined> | UpdateEventResponseDto | undefined;
 }
 

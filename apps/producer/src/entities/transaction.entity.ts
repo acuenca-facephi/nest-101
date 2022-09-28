@@ -8,10 +8,16 @@ export class Transaction {
 
     customId: string;
 
-    constructor(id: UUID, time: string, customId: string) {
+    status: string;
+
+    step: string;
+
+    constructor(id: UUID, time: string, customId: string, status?: string, step?: string) {
         this.#id = id;
         this.time = time;
         this.customId = customId;
+        this.status = status ? status : 'CREATED';
+        this.step = step ? step : '1st step';
     }
 
     @Expose()

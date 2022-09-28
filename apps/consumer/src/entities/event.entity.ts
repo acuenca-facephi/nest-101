@@ -12,12 +12,15 @@ export class Event {
 
     data: Json;
 
-    constructor(id: UUID, time: string, transactionId: string, type: string, data: Json) {
+    consumed: boolean;
+
+    constructor(id: UUID, time: string, transactionId: string, type: string, data: Json, consumed: boolean = false) {
         this.#id = id;
         this.time = time;
         this.transactionId = transactionId;
         this.type = type;
         this.data = data;
+        this.consumed = consumed;
     }
 
     @Expose()
