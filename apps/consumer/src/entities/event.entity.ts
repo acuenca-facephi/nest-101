@@ -6,7 +6,7 @@ export class Event {
 
     time: string;
 
-    transactionId: string;
+    transactionId: UUID;
 
     type: string;
 

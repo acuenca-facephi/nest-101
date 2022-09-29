@@ -23,8 +23,8 @@ export class TransactionPostgreSqlDataSource implements TransactionDataSource {
         this.PostgresTable.initialize(
             configService.get<string>('DATABASE_HOST')!, configService.get<string>('DATABASE_NAME')!,
             configService.get<string>('DATABASE_USER')!, configService.get<string>('DATABASE_PASSWORD')!,
-            configService.get<number>('DATABASE_PORT')!, this.TableName, this.TablePrimaryKeyName,
-            TransactionInstance, logger);
+            configService.get<number>('DATABASE_PORT')!, this.TableName, [this.TablePrimaryKeyName],
+            [], TransactionInstance, logger);
     }
 
     private mapObjectToTransaction(transactionObject: object): Transaction {
@@ -62,13 +62,13 @@ export class TransactionPostgreSqlDataSource implements TransactionDataSource {
     async create(createTransactionDto: CreateTransactionDto): Promise<CreateTransactionResponseDto | undefined> {
         const result = await this.PostgresTable.create(createTransactionDto);
 
-        var transactionResponse = result != undefined ? new CreateTransactionResponseDto(result) : result;
+        var transactionResponse = result != undefined ? new CreateTransactionResponseDto(result['id']) : result;
 
-        return transactionResponse;
+        return transactionResponse
     }
 
     async update(transactionId: string, updateTransactionDto: UpdateTransactionDto): Promise<UpdateTransactionResponseDto | undefined> {
-        const result = await this.PostgresTable.update(transactionId, updateTransactionDto);
+        const result = await this.PostgresTable.update([[ 'id', transactionId ]], updateTransactionDto);
 
         var transactionResponse = result != undefined ? new UpdateTransactionResponseDto(result) : result;
 
@@ -76,7 +76,7 @@ export class TransactionPostgreSqlDataSource implements TransactionDataSource {
     }
 
     async remove(transactionId: string): Promise<Transaction | undefined> {
-        const result = await this.PostgresTable.remove(transactionId);
+        const result = await this.PostgresTable.remove([['id', transactionId]]);
 
         var transactionDeleted = typeof result == 'object' ? this.mapObjectToTransaction(result) : result;
 

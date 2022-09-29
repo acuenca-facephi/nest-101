@@ -10,6 +10,7 @@ import { UpdateTransactionResponseDto } from '../../update/update-transaction-re
 import { UpdateTransactionDto } from '../../update/update-transaction.dto';
 import { UpdateEventResponseDto } from '../../update/update-event-response.dto';
 import { UpdateEventDto } from '../../update/update-event.dto';
+import { PostgresForeignKeyDefinition } from '@app/postgres/entities/postgres-foreingkey-definition';
 
 @Injectable()
 export class TransactionPostgreSqlDataSource implements TransactionEventDataSource {
@@ -33,12 +34,14 @@ export class TransactionPostgreSqlDataSource implements TransactionEventDataSour
 
         this.TransactionPostgresTable = transactionPostgresService;
         this.TransactionPostgresTable.initialize({
-            ...DATABASE_CONFIGURATION, tableName: this.TransactionTableName, primaryKeyName: this.TablePrimaryKeyName,
-            instanceOfObject: TransactionInstance, logger: logger
+            ...DATABASE_CONFIGURATION, tableName: this.TransactionTableName, primaryKeysNames: [this.TablePrimaryKeyName],
+            foreignKeys: [], instanceOfObject: TransactionInstance, logger: logger
         });
         this.EventPostgresTable = eventPostgresService;
         this.EventPostgresTable.initialize({
-            ...DATABASE_CONFIGURATION, tableName: this.EventTableName, primaryKeyName: this.TablePrimaryKeyName,
+            ...DATABASE_CONFIGURATION, tableName: this.EventTableName, primaryKeysNames: [this.TablePrimaryKeyName],
+            foreignKeys: [new PostgresForeignKeyDefinition(
+                'transactionId', this.TablePrimaryKeyName, this.TransactionTableName)], 
             instanceOfObject: EventInstance, logger: logger
         });
     }
@@ -67,7 +70,7 @@ export class TransactionPostgreSqlDataSource implements TransactionEventDataSour
         const result = await this.TransactionPostgresTable.rawQuery(
             `SELECT *
             FROM transaction
-            WHERE id::VARCHAR IN(
+            WHERE id IN(
                 SELECT "transactionId"
                 FROM event
                 GROUP BY "transactionId");`
@@ -87,13 +90,13 @@ export class TransactionPostgreSqlDataSource implements TransactionEventDataSour
     }
 
     async updateTransaction(transactionId: string, updateTransactionDto: UpdateTransactionDto): Promise<UpdateTransactionResponseDto | undefined> {
-        const result = await this.TransactionPostgresTable.update(transactionId, updateTransactionDto);
+        const result = await this.TransactionPostgresTable.update([[this.TablePrimaryKeyName, transactionId]], updateTransactionDto);
 
         return result != undefined ? new UpdateTransactionResponseDto(result) : result;
     }
 
     async updateEvent(eventId: string, updateEventDto: UpdateEventDto): Promise<UpdateEventResponseDto | undefined> {
-        const result = await this.EventPostgresTable.update(eventId, updateEventDto);
+        const result = await this.EventPostgresTable.update([[this.TablePrimaryKeyName, eventId]], updateEventDto);
 
         return result != undefined ? new UpdateEventResponseDto(result) : result;
     }

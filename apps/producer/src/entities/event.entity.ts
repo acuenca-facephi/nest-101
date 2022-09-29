@@ -6,7 +6,7 @@ export class Event {
 
     time: string;
 
-    transactionId: string;
+    transactionId: UUID;
 
     type: string;
 
@@ -14,7 +14,7 @@ export class Event {
 
     consumed: boolean;
 
-    constructor(id: UUID, time: string, transactionId: string, type: string, data: Json, consumed: boolean = false) {
+    constructor(id: UUID, time: string, transactionId: UUID, type: string, data: Json, consumed: boolean = false) {
         this.#id = id;
         this.time = time;
         this.transactionId = transactionId;
@@ -35,6 +35,6 @@ export class Event {
 
 export type EventKeys = keyof Event;
 
-export const EventInstance = new Event(new UUID(''), '', '', '', new Json({}));
+export const EventInstance = new Event(new UUID(''), '', new UUID(''), '', new Json({}));
 
 export const [EventPropertiesNames, EventProperties] = ObjectUtils.getAllObjectPropertyNames(EventInstance);

@@ -2,15 +2,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Pool, QueryResult } from 'pg';
 import { ObjectUtils, Json, UUID } from 'utils/utils';
 import * as pgPromise from 'pg-promise';
-import pg from 'pg-promise/typescript/pg-subset';
-import { PostgresConfig } from './postgres-config';
+import { PostgresForeignKeyDefinition } from './entities/postgres-foreingkey-definition';
+import { PostgresConfig } from './entities/postgres-config';
 const pgp = pgPromise({});
 
 @Injectable()
 export class PostgresService {
     private Pool: Pool;
     private TableName: string;
-    private TablePrimaryKeyName: string;
+    private TablePrimaryKeysNames: string[];
+    private ForeignKeys: PostgresForeignKeyDefinition[];
     private ObjectProperties: [fieldName: string, fieldType: any][];
     private ObjectPropertyNames: string[];
     private Logger: Logger;
@@ -23,10 +24,12 @@ export class PostgresService {
     */
     initialize(postgresConfig: PostgresConfig): void;
     initialize(databaseHost: string, databaseName: string, databaseUser: string,
-        databasePassword: string, databasePort: number, tableName: string, primaryKeyName: string,
+        databasePassword: string, databasePort: number, tableName: string, primaryKeysNames: string[],
+        foreignKeys: PostgresForeignKeyDefinition[],
         instanceOfObject: object, logger: Logger): void;
     initialize(databaseHost: string | PostgresConfig, databaseName?: string, databaseUser?: string,
-        databasePassword?: string, databasePort?: number, tableName?: string, primaryKeyName?: string,
+        databasePassword?: string, databasePort?: number, tableName?: string, primaryKeysNames?: string[],
+        foreignKeys?: PostgresForeignKeyDefinition[],
         instanceOfObject?: object, logger?: Logger
     ) {
         let postgresConfig: PostgresConfig;
@@ -35,13 +38,14 @@ export class PostgresService {
         } else {
             postgresConfig = {
                 databaseHost: databaseHost, databaseName: databaseName!, databaseUser: databaseUser!,
-                databasePassword: databasePassword!, databasePort: databasePort!, tableName: tableName!, primaryKeyName: primaryKeyName!,
-                instanceOfObject: instanceOfObject!, logger: logger!
+                databasePassword: databasePassword!, databasePort: databasePort!, tableName: tableName!, primaryKeysNames: primaryKeysNames!,
+                foreignKeys: foreignKeys!, instanceOfObject: instanceOfObject!, logger: logger!
             }
         }
         this.Logger = postgresConfig.logger;
         this.TableName = postgresConfig.tableName;
-        this.TablePrimaryKeyName = postgresConfig.primaryKeyName;
+        this.TablePrimaryKeysNames = postgresConfig.primaryKeysNames;
+        this.ForeignKeys = postgresConfig.foreignKeys;
         const configurationDbConnection = {
             user: postgresConfig.databaseUser,
             host: postgresConfig.databaseHost,
@@ -96,15 +100,20 @@ export class PostgresService {
         return postgreSqlType;
     }
 
-    private fillFieldConstraints(fieldName: string, fieldType: string, isPrimaryKey: boolean): string {
+    private fillFieldConstraints(fieldName: string, fieldType: string, isPrimaryKey: boolean, isForeignKey: boolean): string {
         let fieldPsqlType = this.mapJsTypeToPsqlType(fieldType);
         if (!fieldPsqlType)
             // TODO: Create a valid postgres types enum instead of "fieldType: string" parameter.
             throw new Error(`Invalid postgres type ${fieldType}`);
         let fieldText: string = `"${fieldName}" ${fieldPsqlType}`;
 
-        if (isPrimaryKey) {
-            fieldText += ' PRIMARY KEY';
+        if (isForeignKey) {
+            const foreignKey = this.ForeignKeys.find(foreignKey => foreignKey.fieldName == fieldName);
+            fieldText +=
+                `, CONSTRAINT fk_${fieldName}
+                FOREIGN KEY("${fieldName}") 
+                REFERENCES ${foreignKey!.foreignTableName}(${foreignKey!.foreignKeyName})`;
+        } else if (isPrimaryKey) {
             if (fieldPsqlType == 'uuid')
                 fieldText += ' DEFAULT gen_random_uuid()';
             else if (fieldPsqlType == 'int')
@@ -147,23 +156,37 @@ export class PostgresService {
                 `Error checking table columns, details below:\n${JSON.stringify(error)}`));
     }
 
+    private getTablePrimaryKeyConstraints(): string {
+        var primaryKeyConstraintsText = 'PRIMARY KEY(';
+
+        for (let i = 0; i < this.TablePrimaryKeysNames.length; i++)
+            primaryKeyConstraintsText += `${i == 0 ? '' : ', '}${this.TablePrimaryKeysNames[i]}`;
+
+        return primaryKeyConstraintsText + ')';
+    }
+
     private createTableIfNotExists() {
         let fieldsTypes: string = '';
 
         for (let index = 0; index < this.ObjectProperties.length; index++) {
             const element = this.ObjectProperties[index];
-            const fieldText = this.fillFieldConstraints(element[0], element[1], element[0] == this.TablePrimaryKeyName);
+            const isForeignKey = this.ForeignKeys.findIndex(
+                foreignKey => element[0] == foreignKey.fieldName) != -1;
+            const fieldText = this.fillFieldConstraints(
+                element[0], element[1], this.TablePrimaryKeysNames.includes(element[0]),
+                isForeignKey);
             fieldsTypes += `${index == 0 ? '' : ', '}${fieldText}`;
         }
 
         const query = `
         CREATE TABLE IF NOT EXISTS ${this.TableName} (
-            ${fieldsTypes}
+            ${fieldsTypes},
+            ${this.getTablePrimaryKeyConstraints()}
         );`;
 
         this.Pool.query(query)
             .then(_ => {
-                this.Logger.log(`Table "${this.TableName}" created succesfylly or already exists.`);
+                this.Logger.log(`Table "${this.TableName}" created succesfully or already exists.`);
                 this.checkTableColumns();
             })
             .catch(error => {
@@ -245,7 +268,8 @@ export class PostgresService {
         var propertiesText: string = '';
         var valuesText: string = '';
         const queryValues = [];
-        const propertiesToCreate = Object.entries(objectToCreate).filter(entry => this.ObjectPropertyNames.includes(entry[0]) && entry[0] != this.TablePrimaryKeyName);
+        const propertiesToCreate = Object.entries(objectToCreate).filter(
+            entry => this.ObjectPropertyNames.includes(entry[0]) && !this.TablePrimaryKeysNames.includes(entry[0]));
 
         try {
             if (propertiesToCreate.length == 0)
@@ -261,13 +285,12 @@ export class PostgresService {
             }
 
             const query = {
-                text: `INSERT INTO ${this.TableName}(${propertiesText}) VALUES (${valuesText}) RETURNING ${this.TablePrimaryKeyName};`,
+                text: `INSERT INTO ${this.TableName}(${propertiesText}) VALUES (${valuesText}) RETURNING ${this.TablePrimaryKeysNames.join(', ')};`,
                 values: queryValues
             };
 
             const queryResult = await this.Pool.query(query);
-            var resultObject = queryResult.rows[0] as object;
-            result = resultObject[this.TablePrimaryKeyName as keyof typeof resultObject];
+            result = queryResult.rows[0] as object;
         } catch (error) {
             this.Logger.error(error.stack);
             result = undefined;
@@ -276,11 +299,13 @@ export class PostgresService {
         return result;
     }
 
-    async update(id: any, objectProperties: object): Promise<any | undefined> {
+    async update(ids: [idFieldName: string, idValue: any][], objectProperties: object): Promise<any | undefined> {
         var result: any | undefined;
         var updateText: string = '';
+        var whereText: string = '';
         const queryValues = [];
-        const propertiesToUpdate = Object.entries(objectProperties).filter(entry => this.ObjectPropertyNames.includes(entry[0]) && entry[0] != this.TablePrimaryKeyName);
+        const propertiesToUpdate = Object.entries(objectProperties).filter(
+            entry => this.ObjectPropertyNames.includes(entry[0]) && !this.TablePrimaryKeysNames.includes(entry[0]));
 
         try {
             if (propertiesToUpdate.length == 0)
@@ -290,18 +315,22 @@ export class PostgresService {
 
             for (let index = 0; index < propertiesToUpdate.length; index++) {
                 const propertyToUpdate = propertiesToUpdate[index];
-                updateText += `"${propertyToUpdate[0]}"=$${index + 2}${index < propertiesToUpdate.length - 1 ? ', ' : ''}`;
+                updateText += `"${propertyToUpdate[0]}"=$${index + 1}${index < propertiesToUpdate.length - 1 ? ', ' : ''}`;
                 queryValues.push(propertyToUpdate[1]);
+            }
+            for (let i = 0; i < ids.length; i++) {
+                whereText += `"${ids[i][0]}" = $${queryValues.length + i + 1}`;
+                queryValues.push(ids[i][1]);
             }
 
             const query = {
-                text: `UPDATE ${this.TableName} SET ${updateText} WHERE "${this.TablePrimaryKeyName}" = $1 RETURNING ${this.TablePrimaryKeyName};`,
-                values: [id].concat(queryValues)
+                text: `UPDATE ${this.TableName} SET ${updateText} WHERE ${whereText} RETURNING ${this.TablePrimaryKeysNames.join(', ')};`,
+                values: queryValues
             };
 
             const queryResult = await this.Pool.query(query);
             var resultObject = queryResult.rows[0] as object;
-            result = resultObject[this.TablePrimaryKeyName as keyof typeof resultObject];
+            result = resultObject[this.TablePrimaryKeysNames as keyof typeof resultObject];
         } catch (error) {
             this.Logger.error(error.stack);
             result = undefined;
@@ -310,9 +339,18 @@ export class PostgresService {
         return result;
     }
 
-    async remove(id: string): Promise<object | undefined> {
+    async remove(ids: [idFieldName: string, idValue: any][]): Promise<object | undefined> {
         var result: object | undefined;
-        const query = { text: `DELETE FROM ${this.TableName} WHERE ${this.TablePrimaryKeyName} = $1 RETURNING *;`, values: [id] };
+        var whereText: string = '';
+        const queryValues = [];
+        for (let i = 0; i < ids.length; i++) {
+            whereText += `"${ids[i][0]}" = $${i + 1}`;
+            queryValues.push(ids[i][1]);
+        }
+        const query = {
+            text: `DELETE FROM ${this.TableName} WHERE ${whereText} RETURNING *;`,
+            values: queryValues
+        };
 
         try {
             const queryResult = await this.Pool.query(query);

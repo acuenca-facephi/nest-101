@@ -2,19 +2,28 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 import { getAllObjectPropertyNames } from '../../util/util';
 import { UUID } from 'utils/utils';
+import { IsDateString, IsNotEmpty, IsString } from 'class-validator';
 
 export class Transaction {
     #id: UUID;
 
+    @IsNotEmpty()
+    @IsDateString()
     @ApiProperty()
     time: string;
 
+    @IsNotEmpty()
+    @IsString()
     @ApiProperty()
     customId: string;
 
+    @IsNotEmpty()
+    @IsString()
     @ApiProperty()
     status: string;
 
+    @IsNotEmpty()
+    @IsString()
     @ApiProperty()
     step: string;
 

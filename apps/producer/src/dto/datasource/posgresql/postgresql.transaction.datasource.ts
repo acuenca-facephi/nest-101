@@ -7,6 +7,7 @@ import { CreateEventDto } from '../../create/create-event.dto';
 import { CreateEventResponseDto } from '../../create/create-event-response.dto';
 import { EVENT_TABLE_TOKEN, PRODUCER_LOGGER_TOKEN, TRANSACTION_TABLE_TOKEN } from 'apps/producer/src/producer.service';
 import { EventInstance } from 'apps/producer/src/entities/event.entity';
+import { PostgresForeignKeyDefinition } from '@app/postgres/entities/postgres-foreingkey-definition';
 
 @Injectable()
 export class TransactionEventPostgreSqlDataSource implements TransactionEventDataSource {
@@ -30,12 +31,14 @@ export class TransactionEventPostgreSqlDataSource implements TransactionEventDat
 
         this.TransactionPostgresTable = transactionPostgresService;
         this.TransactionPostgresTable.initialize({
-            ...DATABASE_CONFIGURATION, tableName: this.TransactionTableName, primaryKeyName: this.TablePrimaryKeyName,
-            instanceOfObject: TransactionInstance, logger: logger
+            ...DATABASE_CONFIGURATION, tableName: this.TransactionTableName, primaryKeysNames: [this.TablePrimaryKeyName],
+            foreignKeys: [], instanceOfObject: TransactionInstance, logger: logger
         });
         this.EventPostgresTable = eventPostgresService;
         this.EventPostgresTable.initialize({
-            ...DATABASE_CONFIGURATION, tableName: this.EventTableName, primaryKeyName: this.TablePrimaryKeyName,
+            ...DATABASE_CONFIGURATION, tableName: this.EventTableName, primaryKeysNames: [this.TablePrimaryKeyName],
+            foreignKeys: [new PostgresForeignKeyDefinition(
+                'transactionId', this.TablePrimaryKeyName, this.TransactionTableName)], 
             instanceOfObject: EventInstance, logger: logger
         });
     }
@@ -59,9 +62,10 @@ export class TransactionEventPostgreSqlDataSource implements TransactionEventDat
     }
 
     async create(createTransactionEventDto: CreateEventDto): Promise<CreateEventResponseDto | undefined> {
+        createTransactionEventDto.consumed = false;
         const result = await this.EventPostgresTable.create(createTransactionEventDto);
 
-        var transactionResponse = result != undefined ? new CreateEventResponseDto(result) : result;
+        var transactionResponse = result != undefined ? new CreateEventResponseDto(result['id']) : result;
 
         return transactionResponse;
     }
