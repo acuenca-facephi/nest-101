@@ -1,11 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TransactionEventDataSource } from './dto/datasource/transaction.datasource';
-import { UpdateEventDto } from './dto/update/update-event.dto';
 import { UpdateIntervalResponseDto } from './dto/update/update-interval-response.dto';
 import { UpdateIntervalDto } from './dto/update/update-interval.dto';
-import { UpdateTransactionDto } from './dto/update/update-transaction.dto';
-import { Event } from './entities/event.entity';
 import { Interval } from './entities/interval.entity';
 
 export const CONSUMER_LOGGER_TOKEN = Symbol('CONSUMER_LOGGER_TOKEN');
@@ -19,6 +16,7 @@ export class ConsumerService {
     private transactionEventDataSource: TransactionEventDataSource;
     private logger: Logger;
     private queryInterval: Interval;
+    private batchSize: number;
 
     constructor(
         @Inject(CONSUMER_TRANSACTION_EVENT_DATA_SOURCE_TOKEN) transactionEventDataSource: TransactionEventDataSource,
@@ -31,6 +29,8 @@ export class ConsumerService {
             parseInt(configService.get<string>('MIN_INTERVAL_MS')!),
             parseInt(configService.get<string>('MAX_INTERVAL_MS')!),
             parseInt(configService.get<string>('INTERVAL_MS')!));
+        // TODO: Create a BatchSize class to define a min/max size, like the Interval class.
+        this.batchSize = parseInt(configService.get<string>('BATCH_SIZE')!);
         this.consumerLoop();
     }
 
@@ -56,7 +56,7 @@ export class ConsumerService {
             for (let i = 0; i < transactions.length; i++) {
                 const transaction = transactions[i];
                 const consumedEvents =
-                    await this.transactionEventDataSource.applyAllTransactionEvents(transaction.id);
+                    await this.transactionEventDataSource.applyAllTransactionEvents(transaction.id, this.batchSize);
                 if (!consumedEvents || consumedEvents.length == 0)
                     this.logger.error(
                         `Can not consume the events of the below transaction.\n${JSON.stringify(transaction)}! :(`);

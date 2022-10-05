@@ -109,14 +109,14 @@ export class TransactionPostgreSqlDataSource implements TransactionEventDataSour
         return result != undefined ? new UpdateEventResponseDto(result) : result;
     }
 
-    async applyAllTransactionEvents(transactionId: string): Promise<Event[] | undefined> {
+    async applyAllTransactionEvents(transactionId: string, batchSize: number): Promise<Event[] | undefined> {
         var result: Event[] | undefined = [];
 
         try {
             const client = await this.TransactionPostgresTable.beginTransaction();
             const events = await this.getAllTransactionEvents(transactionId, client!);
             const transactionEvents: Event[] = events != undefined ? events : [];
-            for (let i = 0; i < transactionEvents.length; i++) {
+            for (let i = 0; i < transactionEvents.length && i < batchSize; i++) {
                 const event = transactionEvents[i];
                 result.push(event);
                 const transactionUpdated: UpdateTransactionDto = event.data;

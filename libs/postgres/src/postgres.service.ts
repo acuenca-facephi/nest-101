@@ -17,12 +17,6 @@ export class PostgresService {
     private ObjectPropertyNames: string[];
     private Logger: Logger;
 
-    /* TODO: Support two string arrays:
-        - primaryKeyNames
-        - foreignKeyNames: [fieldName: string, foreignTableName: string][]
-        This is to support multiple primary keys and foreign keys. 
-        If the foreign table does not exists, raise Error.
-    */
     initialize(postgresConfig: PostgresConfig): void;
     initialize(databaseHost: string, databaseName: string, databaseUser: string,
         databasePassword: string, databasePort: number, tableName: string, primaryKeysNames: string[],
@@ -253,6 +247,8 @@ export class PostgresService {
          * - Add support to change between AND, OR, IN, ALL and ANY.
          * - Add support to change the comparator operators (=, !=, <, >, <=, >=, IS, IS NOT).
          * - Add support to correlated and nested queries.
+         * - Add support to JOIN with foreign keys/tables.
+         * - Add support for LIMIT.
          */
         const dbClient = this.selectClient(client);
         const propertiesToMatch = Object.entries(objectToMatch).filter(entry => this.ObjectPropertyNames.includes(entry[0]));
