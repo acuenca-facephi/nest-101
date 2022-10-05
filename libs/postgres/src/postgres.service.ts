@@ -224,9 +224,17 @@ export class PostgresService {
         return result;
     }
 
-    async getById(id: string): Promise<object | undefined> {
+    async getByIds(ids: [idFieldName: string, idValue: any][]): Promise<object | undefined> {
         var result: object | undefined;
-        const query = { text: `SELECT * FROM ${this.TableName} WHERE id = $1;`, values: [id] };
+        var whereText: string = '';
+        const queryValues: any[] = [];
+        for (let i = 0; i < ids.length; i++) {
+            whereText += `"${ids[i][0]}" = $${i + 1}`;
+            queryValues.push(ids[i][1]);
+        }
+        const query = {
+            text: `SELECT * FROM ${this.TableName} WHERE ${whereText};`, values: queryValues
+        };
 
         try {
             const queryResult = await this.Pool.query(query);

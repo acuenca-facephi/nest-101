@@ -52,7 +52,7 @@ export class TransactionPostgreSqlDataSource implements TransactionDataSource {
     }
 
     async getById(transactionId: string): Promise<Transaction | undefined> {
-        const result = await this.PostgresTable.getById(transactionId);
+        const result = await this.PostgresTable.getByIds([['id', transactionId]]);
 
         var transaction = typeof result == 'object' ? this.mapObjectToTransaction(result) : result;
 
