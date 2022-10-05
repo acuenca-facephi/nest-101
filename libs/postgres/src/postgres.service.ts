@@ -1,9 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Pool, QueryResult } from 'pg';
+import { Pool, PoolClient, QueryResult } from 'pg';
 import { ObjectUtils, Json, UUID } from 'utils/utils';
 import * as pgPromise from 'pg-promise';
 import { PostgresForeignKeyDefinition } from './entities/postgres-foreingkey-definition';
 import { PostgresConfig } from './entities/postgres-config';
+import { getAllObjectPropertyNames } from 'apps/transactions/src/util/util';
 const pgp = pgPromise({});
 
 @Injectable()
@@ -196,6 +197,18 @@ export class PostgresService {
             });
     }
 
+    private noPropertiesError(propertiesLength: number, objectProperties: object) {
+        const [propertiesNames, _] = getAllObjectPropertyNames(objectProperties);
+        if (propertiesLength == 0)
+            throw new Error("There's no properties that matchs with the stored object.\n" +
+                `\tStored object property names: ${this.ObjectPropertyNames}\n` +
+                `\tSended object properties: ${propertiesNames}`);
+    }
+
+    private selectClient(client?: PoolClient): Pool | PoolClient {
+        return client ? client : this.Pool;
+    }
+
     async getAll(): Promise<object[] | undefined> {
         var result: object[] | undefined;
         const query = `SELECT * FROM ${this.TableName};`;
@@ -226,23 +239,21 @@ export class PostgresService {
         return result;
     }
 
-    async getWhere(objectToMatch: object): Promise<object[] | undefined> {
+    async getWhere(objectToMatch: object, forUpdate: boolean = false, client?: PoolClient): Promise<object[] | undefined> {
         /**
          * ------------------------------ TODO ------------------------------
          * - Add support to change between AND, OR, IN, ALL and ANY.
          * - Add support to change the comparator operators (=, !=, <, >, <=, >=, IS, IS NOT).
          * - Add support to correlated and nested queries.
          */
+        const dbClient = this.selectClient(client);
         const propertiesToMatch = Object.entries(objectToMatch).filter(entry => this.ObjectPropertyNames.includes(entry[0]));
         var result: object[] | undefined;
         var whereText: string = '';
         const queryValues = [];
 
         try {
-            if (propertiesToMatch.length == 0)
-                throw new Error("There's no properties to filter that matchs with the stored object.\n" +
-                    `\tStored object property names: ${this.ObjectPropertyNames}\n` +
-                    `\tSended object properties: ${JSON.stringify(objectToMatch)}`);
+            this.noPropertiesError(propertiesToMatch.length, objectToMatch);
             for (let index = 0; index < propertiesToMatch.length; index++) {
                 const propertyToMatch = propertiesToMatch[index][0];
                 const valueToMatch = propertiesToMatch[index][1];
@@ -251,9 +262,10 @@ export class PostgresService {
                 whereText += `"${propertyToMatch}"${operator}$${index + 1}${textEnd}`;
                 queryValues.push(valueToMatch);
             }
-            const query = pgp.as.format(`SELECT * FROM ${this.TableName} WHERE ${whereText};`, queryValues);
+            const query = pgp.as.format(
+                `SELECT * FROM ${this.TableName} WHERE ${whereText}${forUpdate ? ' FOR UPDATE' : ''};`, queryValues);
 
-            const queryResult = await this.Pool.query(query);
+            const queryResult = await dbClient.query(query);
             var result = queryResult.rowCount > 0 ? queryResult.rows as object[] : undefined;
         } catch (error) {
             this.Logger.error(error.stack);
@@ -272,10 +284,7 @@ export class PostgresService {
             entry => this.ObjectPropertyNames.includes(entry[0]) && !this.TablePrimaryKeysNames.includes(entry[0]));
 
         try {
-            if (propertiesToCreate.length == 0)
-                throw new Error("There's no properties to create that matchs with the stored object.\n" +
-                    `\tStored object property names: ${this.ObjectPropertyNames}\n` +
-                    `\tSended object properties: ${JSON.stringify(objectToCreate)}`);
+            this.noPropertiesError(propertiesToCreate.length, objectToCreate);
 
             for (let index = 0; index < propertiesToCreate.length; index++) {
                 const propertyToCreate = propertiesToCreate[index];
@@ -299,7 +308,8 @@ export class PostgresService {
         return result;
     }
 
-    async update(ids: [idFieldName: string, idValue: any][], objectProperties: object): Promise<any | undefined> {
+    async update(ids: [idFieldName: string, idValue: any][], objectProperties: object, client?: PoolClient): Promise<any | undefined> {
+        const dbClient = this.selectClient(client);
         var result: any | undefined;
         var updateText: string = '';
         var whereText: string = '';
@@ -308,10 +318,7 @@ export class PostgresService {
             entry => this.ObjectPropertyNames.includes(entry[0]) && !this.TablePrimaryKeysNames.includes(entry[0]));
 
         try {
-            if (propertiesToUpdate.length == 0)
-                throw new Error("There's no properties to update that matchs with the stored object.\n" +
-                    `\tStored object property names: ${this.ObjectPropertyNames}\n` +
-                    `\tSended object properties: ${JSON.stringify(objectProperties)}`);
+            this.noPropertiesError(propertiesToUpdate.length, objectProperties);
 
             for (let index = 0; index < propertiesToUpdate.length; index++) {
                 const propertyToUpdate = propertiesToUpdate[index];
@@ -328,7 +335,7 @@ export class PostgresService {
                 values: queryValues
             };
 
-            const queryResult = await this.Pool.query(query);
+            const queryResult = await dbClient.query(query);
             var resultObject = queryResult.rows[0] as object;
             result = resultObject[this.TablePrimaryKeysNames as keyof typeof resultObject];
         } catch (error) {
@@ -363,17 +370,46 @@ export class PostgresService {
         return result;
     }
 
-    async rawQuery(queryText: string, queryValues: Array<any> = []): Promise<QueryResult | undefined> {
+    async rawQuery(queryText: string, queryValues: Array<any> = [], client?: PoolClient): Promise<QueryResult | undefined> {
+        const dbClient = this.selectClient(client);
         var result: QueryResult | undefined;
         var query = pgp.as.format(queryText, queryValues);
 
         try {
-            result = await this.Pool.query(query);;
+            result = await dbClient.query(query);;
         } catch (error) {
             this.Logger.error(error.stack);
             result = undefined;
         }
 
         return result;
+    }
+
+    async beginTransaction(): Promise<PoolClient | undefined> {
+        var client: PoolClient | undefined;
+
+        try {
+            client = await this.Pool.connect();
+            await client.query('BEGIN');
+            client.on('error', async err => {
+                this.Logger.error('Error creating transaction. Details below.', err.stack);
+                await client?.query('ROLLBACK');
+            });
+        } catch (error) {
+            this.Logger.error('Error creating transaction. Details below.', error.stack);
+            client = undefined;
+        }
+
+        return client;
+    }
+
+    async endTransaction(client: PoolClient) {
+        try {
+            await client.query('COMMIT')
+            client.release();
+        } catch (error) {
+            this.Logger.error('Error ending transaction. Details below.', error.stack);
+            client.release();
+        }
     }
 }

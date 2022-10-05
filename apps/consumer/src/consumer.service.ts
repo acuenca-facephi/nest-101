@@ -55,15 +55,13 @@ export class ConsumerService {
             const transactions = result != undefined ? result : [];
             for (let i = 0; i < transactions.length; i++) {
                 const transaction = transactions[i];
-                const result = await this.transactionEventDataSource.getAllTransactionEvents(transaction.id);
-                const transactionEvents: Event[] = result != undefined ? result : [];
-                for (let j = 0; j < transactionEvents.length; j++) {
-                    const event = transactionEvents[j];
-                    const transactionUpdated: UpdateTransactionDto = event.data;
-                    this.transactionEventDataSource.updateTransaction(transaction.id, transactionUpdated);
-                    this.transactionEventDataSource.updateEvent(event.id, { consumed: true })
-                    this.logger.log(`Event ${event.id} consumed.`);
-                }
+                const consumedEvents =
+                    await this.transactionEventDataSource.applyAllTransactionEvents(transaction.id);
+                if (!consumedEvents || consumedEvents.length == 0)
+                    this.logger.error(
+                        `Can not consume the events of the below transaction.\n${JSON.stringify(transaction)}! :(`);
+                else
+                    consumedEvents.forEach(event => this.logger.log(`Event ${event.id} consumed! :)`));
             }
             this.consumerLoop()
         }, this.queryInterval.interval);
