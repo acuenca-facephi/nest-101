@@ -43,7 +43,10 @@ export class TransactionController {
 
         result = await this.transactionService.create(createTransactionDto);
         if (result instanceof CreateTransactionResponseDto) {
-            this.logger.log(`Transaction ${result.transactionId} created! :)`);
+            this.logger.log(
+                !result.errorMessage ?
+                    `Transaction ${result.transactionId} created! :)`:
+                    `Transaction ${JSON.stringify(createTransactionDto)} not created! :(\nDetails below: ${result.errorMessage}`);
         } else {
             this.logger.log(`Transaction ${JSON.stringify(createTransactionDto)} not created! :(`);
             throw new HttpException({

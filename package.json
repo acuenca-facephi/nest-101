@@ -86,7 +86,8 @@
     ],
     "moduleNameMapper": {
       "^@app/postgres(|/.*)$": "<rootDir>/libs/postgres/src/$1",
-      "^utils/utils(|/.*)$": "<rootDir>/libs/utils/src/$1"
+      "^utils/utils(|/.*)$": "<rootDir>/libs/utils/src/$1",
+      "^schreg/schema-registry(|/.*)$": "<rootDir>/libs/schema-registry/src/$1"
     }
   }
 }

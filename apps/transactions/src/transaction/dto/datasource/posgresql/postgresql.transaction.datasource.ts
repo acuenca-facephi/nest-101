@@ -28,7 +28,7 @@ export class TransactionPostgreSqlDataSource implements TransactionDataSource {
     }
 
     private mapObjectToTransaction(transactionObject: object): Transaction {
-        var transaction: Transaction = new Transaction('', '', '');
+        var transaction: Transaction = new Transaction('', '', '', '');
         Object.assign(transaction, transactionObject);
 
         if (transaction.id && transaction.time && transaction.customId)

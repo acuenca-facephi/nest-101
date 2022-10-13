@@ -20,6 +20,11 @@ export class Transaction {
     @IsNotEmpty()
     @IsString()
     @ApiProperty()
+    flowId: string;
+
+    @IsNotEmpty()
+    @IsString()
+    @ApiProperty()
     status: string;
 
     @IsNotEmpty()
@@ -27,10 +32,11 @@ export class Transaction {
     @ApiProperty()
     step: string;
 
-    constructor(id: UUID, time: string, customId: string, status?: string, step?: string) {
+    constructor(id: UUID, time: string, customId: string, flowId: string, status?: string, step?: string) {
         this.#id = id;
         this.time = time;
         this.customId = customId;
+        this.flowId = flowId;
         this.status = status ? status : 'CREATED';
         this.step = step ? step : '1st step';
     }
@@ -47,6 +53,6 @@ export class Transaction {
 
 export type TransactionKeys = keyof Transaction;
 
-export const TransactionInstance = new Transaction(new UUID(''), '', '');
+export const TransactionInstance = new Transaction(new UUID(''), '', '', '');
 
 export const [TransactionPropertiesNames, TransactionProperties] = getAllObjectPropertyNames(TransactionInstance);

@@ -63,7 +63,7 @@ export class ConsumerService {
                 else
                     consumedEvents.forEach(event => this.logger.log(`Event ${event.id} consumed! :)`));
             }
-            this.consumerLoop()
+            this.consumerLoop();
         }, this.queryInterval.interval);
     }
 }
