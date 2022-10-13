@@ -10,6 +10,8 @@ import { ApicurioV2SchemaRegistryDataSource } from '@schreg/schema-registry/vali
 import { AjvJsonSchemaService } from '@schreg/schema-registry/validation/ajv/ajv-json-schema.service';
 import { SchemaRegistryDataSource } from '@schreg/schema-registry/validation/schema-registry.datsource';
 import { JsonSchemaService } from '@schreg/schema-registry/validation/json-schema.service';
+import { ObjectUtils } from 'utils/utils';
+import { generateFakeInstance } from '@schreg/schema-registry/validation/json-schema-faker.utils';
 
 export const TRANSACTION_DATASOURCE_TOKEN = Symbol('TRANSACTION_DATASOURCE_TOKEN');
 
@@ -40,10 +42,11 @@ export class TransactionService {
 
     async create(createTransactionDto: CreateTransactionDto): Promise<CreateTransactionResponseDto | undefined> {
         try {
+            const schema = await this.schemaRegistryDataSource.getSchema(createTransactionDto.flowId);
             return (
                 this.jsonSchemaService.validate(
-                    await this.schemaRegistryDataSource.getSchema(createTransactionDto.flowId),
-                    createTransactionDto
+                    schema,
+                    ObjectUtils.mergeObjects(createTransactionDto, generateFakeInstance(schema))
                 ) ?
                     this.transactionDataSource.create(createTransactionDto)
                     :

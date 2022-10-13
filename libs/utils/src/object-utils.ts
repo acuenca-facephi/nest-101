@@ -19,4 +19,17 @@ export class ObjectUtils {
         }
         return [propertyNames, properties];
     }
+
+    static mergeObjects(target: object, source: object, overwrite: boolean = false): object {
+        /**
+         * Returns two object merged with and without overwriting.
+         *
+         * @param target - Target object to merge.
+         * @param source - Source object to merge.
+         * @param overwrite - If true "source" param will overwrite "target", else 
+         *                      "source" properties will be added to "target" object.
+         * @returns Merge result.
+         */
+        return overwrite ? { ...target, ...source } : { ...source, ...target };
+    }
 }
