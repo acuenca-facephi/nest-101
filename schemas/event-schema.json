@@ -1,6 +1,5 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://example.com/product.schema.json",
     "title": "event",
     "description": "A event is an object that contain information of a occurrence about a transaction.",
     "type": "object",
@@ -23,7 +22,7 @@
         "data": {
             "description": "Status of the transaction.",
             "type": "object",
-            "minPoperties": "1",
+            "minProperties": 1,
             "properties": {
                 "status": {
                     "description": "Status of the transaction.",
