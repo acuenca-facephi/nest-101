@@ -29,7 +29,10 @@ export class ProducerController {
         const result = await this.producerService.createEvent(createEventDto);
 
         if (result instanceof CreateEventResponseDto) {
-            this.logger.log(`Event ${result.eventId} created! :)`);
+            this.logger.log(
+                !result.errorMessage ?
+                    `Event ${result.eventId} created! :)` :
+                    `Event ${JSON.stringify(createEventDto)} not created! :(\nDetails below: ${result.errorMessage}`);
         } else {
             this.logger.log(`Event ${JSON.stringify(createEventDto)} not created! :(`);
             throw new HttpException({

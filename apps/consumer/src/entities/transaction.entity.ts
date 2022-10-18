@@ -8,6 +8,8 @@ export class Transaction {
 
     customId: string;
 
+    flowId: string;
+
     status: string;
 
     step: string;

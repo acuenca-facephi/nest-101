@@ -19,6 +19,14 @@
             "type": "string",
             "format": "uuid"
         },
+        "type": {
+            "description": "Event type, used to validate the event.",
+            "type": "string"
+        },
+        "consumed": {
+            "description": "This field is to perform a logical delete of an event and mark it as consumed.",
+            "type": "boolean"
+        },
         "data": {
             "description": "Status of the transaction.",
             "type": "object",

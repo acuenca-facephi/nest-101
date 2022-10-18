@@ -1,7 +1,9 @@
 export class CreateEventResponseDto {
-    eventId: string
+    eventId: string;
+    errorMessage?: string;
 
-    constructor(eventId: string) {
-        this.eventId = eventId
+    constructor(eventId: string, errorMessage?: string) {
+        this.eventId = eventId;
+        this.errorMessage = errorMessage;
     }
 }

@@ -1,7 +1,9 @@
 export class UpdateTransactionResponseDto {
-    transactionId: string
+    transactionId: string;
+    errorMessage?: string;
 
-    constructor(transactionId: string) {
-        this.transactionId = transactionId
+    constructor(transactionId: string, errorMessage?: string) {
+        this.transactionId = transactionId;
+        this.errorMessage = errorMessage;
     }
 }
