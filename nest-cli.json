@@ -44,6 +44,24 @@
       "compilerOptions": {
         "tsConfigPath": "libs/utils/tsconfig.lib.json"
       }
+    },
+    "consumer": {
+      "type": "application",
+      "root": "apps/consumer",
+      "entryFile": "main",
+      "sourceRoot": "apps/consumer/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/consumer/tsconfig.app.json"
+      }
+    },
+    "schema-registry": {
+      "type": "library",
+      "root": "libs/schema-registry",
+      "entryFile": "index",
+      "sourceRoot": "libs/schema-registry/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/schema-registry/tsconfig.lib.json"
+      }
     }
   }
 }

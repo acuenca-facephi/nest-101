@@ -1,0 +1,42 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "transaction",
+    "description": "A transaction is a process that can contains one or more steps and it has a status.",
+    "type": "object",
+    "properties": {
+        "id": {
+            "description": "The unique identifier(UUID) for a transaction",
+            "type": "string",
+            "format": "uuid"
+        },
+        "time": {
+            "description": "Creation time of the transaction. (ISO 8601)",
+            "type": "string",
+            "format": "date-time"
+        },
+        "customId": {
+            "description": "Customer identifier.",
+            "type": "string",
+            "pattern": "^[0-9]{4}-[A-Z]{3}$"
+        },
+        "flowId": {
+            "description": "Schema identifier",
+            "type": "string"
+        },
+        "status": {
+            "description": "Status of the transaction.",
+            "type": "string"
+        },
+        "step": {
+            "description": "Step of the transaction.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "id",
+        "time",
+        "customId",
+        "status",
+        "step"
+    ]
+}

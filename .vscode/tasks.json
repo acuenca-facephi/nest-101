@@ -10,7 +10,7 @@
             },
             "presentation": {
                 "reveal": "silent",
-                "close": false
+                "close": true
             }
         },
         {
@@ -22,7 +22,19 @@
             },
             "presentation": {
                 "reveal": "silent",
-                "close": false
+                "close": true
+            }
+        },
+        {
+            "label": "consumer-build",
+            "command": "npm run build",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}/apps/consumer"
+            },
+            "presentation": {
+                "reveal": "silent",
+                "close": true
             }
         }
     ]

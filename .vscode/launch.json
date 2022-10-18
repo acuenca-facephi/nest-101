@@ -31,6 +31,21 @@
             ],
             "cwd": "${workspaceFolder}/apps/producer",
             "console": "integratedTerminal"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Debug Consumer",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "preLaunchTask": "consumer-build",
+            "program": "${workspaceFolder}/apps/consumer/src/main.ts",
+            "outFiles": [
+                "${workspaceFolder}/dist/**/*.js"
+            ],
+            "cwd": "${workspaceFolder}/apps/consumer",
+            "console": "integratedTerminal"
         }
     ]
 }

@@ -1,12 +1,11 @@
 import {
     Body, ClassSerializerInterceptor, Controller, Get, HttpException, HttpStatus,
-    Inject, Logger, Post, Res, UseInterceptors
+    Inject, Logger, Post, UseInterceptors
 } from '@nestjs/common';
-import { CreateTransactionEventDto } from './dto/create/create-transaction-event.dto';
+import { CreateEventDto } from './dto/create/create-event.dto';
 import { ProducerService, PRODUCER_LOGGER_TOKEN } from './producer.service';
-import { Response } from 'express';
 import { ExcludeNullInterceptor } from 'utils/utils';
-import { CreateTransactionEventResponseDto } from './dto/create/create-transaction-event-response.dto';
+import { CreateEventResponseDto } from './dto/create/create-event-response.dto';
 
 @Controller('transaction-event')
 @UseInterceptors(ClassSerializerInterceptor, ExcludeNullInterceptor)
@@ -26,17 +25,20 @@ export class ProducerController {
     }
 
     @Post()
-    async createTransactionEvent(@Body() createTransactionEventDto: CreateTransactionEventDto) {
-        const result = await this.producerService.createTransactionEvent(createTransactionEventDto);
+    async createTransactionEvent(@Body() createEventDto: CreateEventDto) {
+        const result = await this.producerService.createEvent(createEventDto);
 
-        if (result instanceof CreateTransactionEventResponseDto) {
-            this.logger.log(`Transaction ${result.transactionId} created! :)`);
+        if (result instanceof CreateEventResponseDto) {
+            this.logger.log(
+                !result.errorMessage ?
+                    `Event ${result.eventId} created! :)` :
+                    `Event ${JSON.stringify(createEventDto)} not created! :(\nDetails below: ${result.errorMessage}`);
         } else {
-            this.logger.log(`Transaction ${JSON.stringify(createTransactionEventDto)} not created! :(`);
+            this.logger.log(`Event ${JSON.stringify(createEventDto)} not created! :(`);
             throw new HttpException({
                 status: HttpStatus.INTERNAL_SERVER_ERROR,
-                error: `Transaction ${JSON.stringify(createTransactionEventDto)} not created! :(`,
-            }, HttpStatus.INTERNAL_SERVER_ERROR); 
+                error: `Event ${JSON.stringify(createEventDto)} not created! :(`,
+            }, HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
         return result;

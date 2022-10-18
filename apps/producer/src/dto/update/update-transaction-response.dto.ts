@@ -1,4 +1,4 @@
-export class CreateTransactionEventResponseDto {
+export class UpdateTransactionResponseDto {
     transactionId: string
 
     constructor(transactionId: string) {

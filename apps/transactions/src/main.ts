@@ -1,3 +1,4 @@
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
@@ -16,6 +17,9 @@ async function bootstrap() {
         .build();
     const document = SwaggerModule.createDocument(app, options);
     SwaggerModule.setup('swagger', app, document);
+
+    // Setup validation for every HTTP reuqest.
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
     await app.listen(port ? port : 3000);
 }

@@ -1,30 +1,55 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Pool } from 'pg';
+import { Pool, PoolClient, QueryResult } from 'pg';
 import { ObjectUtils, Json, UUID } from 'utils/utils';
+import * as pgPromise from 'pg-promise';
+import { PostgresForeignKeyDefinition } from './entities/postgres-foreingkey-definition';
+import { PostgresConfig } from './entities/postgres-config';
+import { getAllObjectPropertyNames } from 'apps/transactions/src/util/util';
+const pgp = pgPromise({});
 
 @Injectable()
 export class PostgresService {
     private Pool: Pool;
     private TableName: string;
-    private TablePrimaryKeyName: string;
+    private TablePrimaryKeysNames: string[];
+    private ForeignKeys: PostgresForeignKeyDefinition[];
     private ObjectProperties: [fieldName: string, fieldType: any][];
     private ObjectPropertyNames: string[];
     private Logger: Logger;
 
+    initialize(postgresConfig: PostgresConfig): void;
     initialize(databaseHost: string, databaseName: string, databaseUser: string,
-        databasePassword: string, databasePort: number, tableName: string, primaryKeyName: string,
-        instanceOfObject: object, logger: Logger) {
-        this.Logger = logger;
-        this.TableName = tableName;
-        this.TablePrimaryKeyName = primaryKeyName;
-        this.Pool = new Pool({
-            user: databaseUser,
-            host: databaseHost,
-            database: databaseName,
-            password: databasePassword,
-            port: databasePort,
-        });
-        this.setObjectInstance(instanceOfObject);
+        databasePassword: string, databasePort: number, tableName: string, primaryKeysNames: string[],
+        foreignKeys: PostgresForeignKeyDefinition[],
+        instanceOfObject: object, logger: Logger): void;
+    initialize(databaseHost: string | PostgresConfig, databaseName?: string, databaseUser?: string,
+        databasePassword?: string, databasePort?: number, tableName?: string, primaryKeysNames?: string[],
+        foreignKeys?: PostgresForeignKeyDefinition[],
+        instanceOfObject?: object, logger?: Logger
+    ) {
+        let postgresConfig: PostgresConfig;
+        if (typeof databaseHost == 'object') {
+            postgresConfig = arguments[0];
+        } else {
+            postgresConfig = {
+                databaseHost: databaseHost, databaseName: databaseName!, databaseUser: databaseUser!,
+                databasePassword: databasePassword!, databasePort: databasePort!, tableName: tableName!, primaryKeysNames: primaryKeysNames!,
+                foreignKeys: foreignKeys!, instanceOfObject: instanceOfObject!, logger: logger!
+            }
+        }
+        this.Logger = postgresConfig.logger;
+        this.TableName = postgresConfig.tableName;
+        this.TablePrimaryKeysNames = postgresConfig.primaryKeysNames;
+        this.ForeignKeys = postgresConfig.foreignKeys;
+        const configurationDbConnection = {
+            user: postgresConfig.databaseUser,
+            host: postgresConfig.databaseHost,
+            database: postgresConfig.databaseName,
+            password: postgresConfig.databasePassword,
+            port: postgresConfig.databasePort,
+        };
+        this.Pool = new Pool(configurationDbConnection);
+        this.setObjectInstance(postgresConfig.instanceOfObject);
     }
 
     setObjectInstance(instanceOfObject: object) {
@@ -70,15 +95,20 @@ export class PostgresService {
         return postgreSqlType;
     }
 
-    private fillFieldConstraints(fieldName: string, fieldType: string, isPrimaryKey: boolean): string {
+    private fillFieldConstraints(fieldName: string, fieldType: string, isPrimaryKey: boolean, isForeignKey: boolean): string {
         let fieldPsqlType = this.mapJsTypeToPsqlType(fieldType);
         if (!fieldPsqlType)
             // TODO: Create a valid postgres types enum instead of "fieldType: string" parameter.
             throw new Error(`Invalid postgres type ${fieldType}`);
         let fieldText: string = `"${fieldName}" ${fieldPsqlType}`;
 
-        if (isPrimaryKey) {
-            fieldText += ' PRIMARY KEY';
+        if (isForeignKey) {
+            const foreignKey = this.ForeignKeys.find(foreignKey => foreignKey.fieldName == fieldName);
+            fieldText +=
+                `, CONSTRAINT fk_${fieldName}
+                FOREIGN KEY("${fieldName}") 
+                REFERENCES ${foreignKey!.foreignTableName}(${foreignKey!.foreignKeyName})`;
+        } else if (isPrimaryKey) {
             if (fieldPsqlType == 'uuid')
                 fieldText += ' DEFAULT gen_random_uuid()';
             else if (fieldPsqlType == 'int')
@@ -121,23 +151,37 @@ export class PostgresService {
                 `Error checking table columns, details below:\n${JSON.stringify(error)}`));
     }
 
+    private getTablePrimaryKeyConstraints(): string {
+        var primaryKeyConstraintsText = 'PRIMARY KEY(';
+
+        for (let i = 0; i < this.TablePrimaryKeysNames.length; i++)
+            primaryKeyConstraintsText += `${i == 0 ? '' : ', '}${this.TablePrimaryKeysNames[i]}`;
+
+        return primaryKeyConstraintsText + ')';
+    }
+
     private createTableIfNotExists() {
         let fieldsTypes: string = '';
 
         for (let index = 0; index < this.ObjectProperties.length; index++) {
             const element = this.ObjectProperties[index];
-            const fieldText = this.fillFieldConstraints(element[0], element[1], element[0] == this.TablePrimaryKeyName);
+            const isForeignKey = this.ForeignKeys.findIndex(
+                foreignKey => element[0] == foreignKey.fieldName) != -1;
+            const fieldText = this.fillFieldConstraints(
+                element[0], element[1], this.TablePrimaryKeysNames.includes(element[0]),
+                isForeignKey);
             fieldsTypes += `${index == 0 ? '' : ', '}${fieldText}`;
         }
 
         const query = `
         CREATE TABLE IF NOT EXISTS ${this.TableName} (
-            ${fieldsTypes}
+            ${fieldsTypes},
+            ${this.getTablePrimaryKeyConstraints()}
         );`;
 
         this.Pool.query(query)
             .then(_ => {
-                this.Logger.log(`Table "${this.TableName}" created succesfylly or already exists.`);
+                this.Logger.log(`Table "${this.TableName}" created succesfully or already exists.`);
                 this.checkTableColumns();
             })
             .catch(error => {
@@ -145,6 +189,18 @@ export class PostgresService {
                 this.Logger.error(errorMessage);
                 throw new Error(errorMessage);
             });
+    }
+
+    private noPropertiesError(propertiesLength: number, objectProperties: object) {
+        const [propertiesNames, _] = getAllObjectPropertyNames(objectProperties);
+        if (propertiesLength == 0)
+            throw new Error("There's no properties that matchs with the stored object.\n" +
+                `\tStored object property names: ${this.ObjectPropertyNames}\n` +
+                `\tSended object properties: ${propertiesNames}`);
+    }
+
+    private selectClient(client?: PoolClient): Pool | PoolClient {
+        return client ? client : this.Pool;
     }
 
     async getAll(): Promise<object[] | undefined> {
@@ -162,13 +218,59 @@ export class PostgresService {
         return result;
     }
 
-    async getById(id: string): Promise<object | undefined> {
+    async getByIds(ids: [idFieldName: string, idValue: any][]): Promise<object | undefined> {
         var result: object | undefined;
-        const query = { text: `SELECT * FROM ${this.TableName} WHERE id = $1;`, values: [id] };
+        var whereText: string = '';
+        const queryValues: any[] = [];
+        for (let i = 0; i < ids.length; i++) {
+            whereText += `"${ids[i][0]}" = $${i + 1}`;
+            queryValues.push(ids[i][1]);
+        }
+        const query = {
+            text: `SELECT * FROM ${this.TableName} WHERE ${whereText};`, values: queryValues
+        };
 
         try {
             const queryResult = await this.Pool.query(query);
             result = queryResult.rows[0];
+        } catch (error) {
+            this.Logger.error(error.stack);
+            result = undefined;
+        }
+
+        return result;
+    }
+
+    async getWhere(objectToMatch: object, forUpdate: boolean = false, client?: PoolClient): Promise<object[] | undefined> {
+        /**
+         * ------------------------------ TODO ------------------------------
+         * - Add support to change between AND, OR, IN, ALL and ANY.
+         * - Add support to change the comparator operators (=, !=, <, >, <=, >=, IS, IS NOT).
+         * - Add support to correlated and nested queries.
+         * - Add support to JOIN with foreign keys/tables.
+         * - Add support for LIMIT.
+         */
+        const dbClient = this.selectClient(client);
+        const propertiesToMatch = Object.entries(objectToMatch).filter(entry => this.ObjectPropertyNames.includes(entry[0]));
+        var result: object[] | undefined;
+        var whereText: string = '';
+        const queryValues = [];
+
+        try {
+            this.noPropertiesError(propertiesToMatch.length, objectToMatch);
+            for (let index = 0; index < propertiesToMatch.length; index++) {
+                const propertyToMatch = propertiesToMatch[index][0];
+                const valueToMatch = propertiesToMatch[index][1];
+                const operator = valueToMatch == null ? ' IS ' : '=';
+                const textEnd = index < propertiesToMatch.length - 1 ? ' AND ' : '';
+                whereText += `"${propertyToMatch}"${operator}$${index + 1}${textEnd}`;
+                queryValues.push(valueToMatch);
+            }
+            const query = pgp.as.format(
+                `SELECT * FROM ${this.TableName} WHERE ${whereText}${forUpdate ? ' FOR UPDATE' : ''};`, queryValues);
+
+            const queryResult = await dbClient.query(query);
+            var result = queryResult.rowCount > 0 ? queryResult.rows as object[] : undefined;
         } catch (error) {
             this.Logger.error(error.stack);
             result = undefined;
@@ -182,13 +284,11 @@ export class PostgresService {
         var propertiesText: string = '';
         var valuesText: string = '';
         const queryValues = [];
-        const propertiesToCreate = Object.entries(objectToCreate).filter(entry => this.ObjectPropertyNames.includes(entry[0]) && entry[0] != this.TablePrimaryKeyName);
+        const propertiesToCreate = Object.entries(objectToCreate).filter(
+            entry => this.ObjectPropertyNames.includes(entry[0]) && !this.TablePrimaryKeysNames.includes(entry[0]));
 
         try {
-            if (propertiesToCreate.length == 0)
-                throw new Error("There's no properties to create that matchs with the stored object.\n" +
-                    `\tStored object property names: ${this.ObjectPropertyNames}\n` +
-                    `\tSended object properties: ${JSON.stringify(objectToCreate)}`);
+            this.noPropertiesError(propertiesToCreate.length, objectToCreate);
 
             for (let index = 0; index < propertiesToCreate.length; index++) {
                 const propertyToCreate = propertiesToCreate[index];
@@ -198,13 +298,12 @@ export class PostgresService {
             }
 
             const query = {
-                text: `INSERT INTO ${this.TableName}(${propertiesText}) VALUES (${valuesText}) RETURNING ${this.TablePrimaryKeyName};`,
+                text: `INSERT INTO ${this.TableName}(${propertiesText}) VALUES (${valuesText}) RETURNING ${this.TablePrimaryKeysNames.join(', ')};`,
                 values: queryValues
             };
 
             const queryResult = await this.Pool.query(query);
-            var resultObject = queryResult.rows[0] as object;
-            result = resultObject[this.TablePrimaryKeyName as keyof typeof resultObject];
+            result = queryResult.rows[0] as object;
         } catch (error) {
             this.Logger.error(error.stack);
             result = undefined;
@@ -213,32 +312,36 @@ export class PostgresService {
         return result;
     }
 
-    async update(id: string, objectProperties: object): Promise<any | undefined> {
+    async update(ids: [idFieldName: string, idValue: any][], objectProperties: object, client?: PoolClient): Promise<any | undefined> {
+        const dbClient = this.selectClient(client);
         var result: any | undefined;
         var updateText: string = '';
+        var whereText: string = '';
         const queryValues = [];
-        const propertiesToUpdate = Object.entries(objectProperties).filter(entry => this.ObjectPropertyNames.includes(entry[0]) && entry[0] != this.TablePrimaryKeyName);
+        const propertiesToUpdate = Object.entries(objectProperties).filter(
+            entry => this.ObjectPropertyNames.includes(entry[0]) && !this.TablePrimaryKeysNames.includes(entry[0]));
 
         try {
-            if (propertiesToUpdate.length == 0)
-                throw new Error("There's no properties to update that matchs with the stored object.\n" +
-                    `\tStored object property names: ${this.ObjectPropertyNames}\n` +
-                    `\tSended object properties: ${JSON.stringify(objectProperties)}`);
+            this.noPropertiesError(propertiesToUpdate.length, objectProperties);
 
             for (let index = 0; index < propertiesToUpdate.length; index++) {
                 const propertyToUpdate = propertiesToUpdate[index];
-                updateText += `"${propertyToUpdate[0]}"=$${index + 2}${index < propertiesToUpdate.length - 1 ? ', ' : ''}`;
+                updateText += `"${propertyToUpdate[0]}"=$${index + 1}${index < propertiesToUpdate.length - 1 ? ', ' : ''}`;
                 queryValues.push(propertyToUpdate[1]);
+            }
+            for (let i = 0; i < ids.length; i++) {
+                whereText += `"${ids[i][0]}" = $${queryValues.length + i + 1}`;
+                queryValues.push(ids[i][1]);
             }
 
             const query = {
-                text: `UPDATE ${this.TableName} SET ${updateText} WHERE "${this.TablePrimaryKeyName}" = $1 RETURNING ${this.TablePrimaryKeyName};`,
-                values: [id].concat(queryValues)
+                text: `UPDATE ${this.TableName} SET ${updateText} WHERE ${whereText} RETURNING ${this.TablePrimaryKeysNames.join(', ')};`,
+                values: queryValues
             };
 
-            const queryResult = await this.Pool.query(query);
+            const queryResult = await dbClient.query(query);
             var resultObject = queryResult.rows[0] as object;
-            result = resultObject[this.TablePrimaryKeyName as keyof typeof resultObject];
+            result = resultObject[this.TablePrimaryKeysNames as keyof typeof resultObject];
         } catch (error) {
             this.Logger.error(error.stack);
             result = undefined;
@@ -247,9 +350,18 @@ export class PostgresService {
         return result;
     }
 
-    async remove(id: string): Promise<object | undefined> {
+    async remove(ids: [idFieldName: string, idValue: any][]): Promise<object | undefined> {
         var result: object | undefined;
-        const query = { text: `DELETE FROM ${this.TableName} WHERE ${this.TablePrimaryKeyName} = $1 RETURNING *;`, values: [id] };
+        var whereText: string = '';
+        const queryValues = [];
+        for (let i = 0; i < ids.length; i++) {
+            whereText += `"${ids[i][0]}" = $${i + 1}`;
+            queryValues.push(ids[i][1]);
+        }
+        const query = {
+            text: `DELETE FROM ${this.TableName} WHERE ${whereText} RETURNING *;`,
+            values: queryValues
+        };
 
         try {
             const queryResult = await this.Pool.query(query);
@@ -260,5 +372,48 @@ export class PostgresService {
         }
 
         return result;
+    }
+
+    async rawQuery(queryText: string, queryValues: Array<any> = [], client?: PoolClient): Promise<QueryResult | undefined> {
+        const dbClient = this.selectClient(client);
+        var result: QueryResult | undefined;
+        var query = pgp.as.format(queryText, queryValues);
+
+        try {
+            result = await dbClient.query(query);;
+        } catch (error) {
+            this.Logger.error(error.stack);
+            result = undefined;
+        }
+
+        return result;
+    }
+
+    async beginTransaction(): Promise<PoolClient | undefined> {
+        var client: PoolClient | undefined;
+
+        try {
+            client = await this.Pool.connect();
+            await client.query('BEGIN');
+            client.on('error', async err => {
+                this.Logger.error('Error creating transaction. Details below.', err.stack);
+                await client?.query('ROLLBACK');
+            });
+        } catch (error) {
+            this.Logger.error('Error creating transaction. Details below.', error.stack);
+            client = undefined;
+        }
+
+        return client;
+    }
+
+    async endTransaction(client: PoolClient) {
+        try {
+            await client.query('COMMIT')
+            client.release();
+        } catch (error) {
+            this.Logger.error('Error ending transaction. Details below.', error.stack);
+            client.release();
+        }
     }
 }
