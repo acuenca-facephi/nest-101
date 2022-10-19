@@ -10,11 +10,8 @@ import { PoolClient } from "pg";
 export interface TransactionEventDataSource {
     getAllTransactionsWithEvents(): Transaction[] | undefined | Promise<Transaction[] | undefined>;
     getAllTransactionEvents(transactionId: string, client?: PoolClient): Promise<Event[] | undefined>;
-    applyAllTransactionEvents(transactionId: string, batchSize: number): Event[] | undefined | Promise<Event[] | undefined>;
-    applyAllTransactionEventsValidation(
+    applyAllTransactionEvents(
         transactionId: string, events: Event[]
     ): Event[] | undefined | Promise<Event[] | undefined>;
-    updateTransaction(transactionId: string, updateTransactionDto: UpdateTransactionDto): UpdateTransactionResponseDto | Promise<UpdateTransactionResponseDto | undefined> | undefined;
-    updateEvent(eventId: string, updateEventDto: UpdateEventDto): Promise<UpdateEventResponseDto | undefined> | UpdateEventResponseDto | undefined;
 }
 

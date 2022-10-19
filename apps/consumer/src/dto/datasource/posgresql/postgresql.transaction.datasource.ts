@@ -93,7 +93,7 @@ export class TransactionPostgreSqlDataSource implements TransactionEventDataSour
         return events;
     }
 
-    async updateTransaction(
+    private async updateTransaction(
         transactionId: string, updateTransactionDto: UpdateTransactionDto, client?: PoolClient
     ): Promise<UpdateTransactionResponseDto | undefined> {
         const result = await this.TransactionPostgresTable.update(
@@ -102,13 +102,14 @@ export class TransactionPostgreSqlDataSource implements TransactionEventDataSour
         return result != undefined ? new UpdateTransactionResponseDto(result) : result;
     }
 
-    async updateEvent(eventId: string, updateEventDto: UpdateEventDto, client?: PoolClient): Promise<UpdateEventResponseDto | undefined> {
+    private async updateEvent(eventId: string, updateEventDto: UpdateEventDto, client?: PoolClient): Promise<UpdateEventResponseDto | undefined> {
         const result = await this.EventPostgresTable.update(
             [[this.TablePrimaryKeyName, eventId]], updateEventDto, client);
 
         return result != undefined ? new UpdateEventResponseDto(result) : result;
     }
 
+    /*
     async applyAllTransactionEvents(transactionId: string, batchSize: number): Promise<Event[] | undefined> {
         var result: Event[] | undefined = [];
 
@@ -130,8 +131,9 @@ export class TransactionPostgreSqlDataSource implements TransactionEventDataSour
 
         return result;
     }
+    */
 
-    async applyAllTransactionEventsValidation(
+    async applyAllTransactionEvents(
         transactionId: string, events: Event[]
     ): Promise<Event[] | undefined> {
         var result: Event[] | undefined = [];

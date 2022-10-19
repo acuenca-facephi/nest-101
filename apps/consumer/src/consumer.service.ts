@@ -7,7 +7,6 @@ import { SchemaRegistryDataSource } from '@schreg/schema-registry/validation/sch
 import { TransactionEventDataSource } from './dto/datasource/transaction.datasource';
 import { UpdateIntervalResponseDto } from './dto/update/update-interval-response.dto';
 import { UpdateIntervalDto } from './dto/update/update-interval.dto';
-import { UpdateTransactionDto } from './dto/update/update-transaction.dto';
 import { Interval } from './entities/interval.entity';
 import { Event } from './entities/event.entity';
 import { Transaction } from './entities/transaction.entity';
@@ -45,7 +44,7 @@ export class ConsumerService {
             parseInt(configService.get<string>('INTERVAL_MS')!));
         // TODO: Create a BatchSize class to define a min/max size, like the Interval class.
         this.batchSize = parseInt(configService.get<string>('BATCH_SIZE')!);
-        this.consumerLoopValidation();
+        this.consumerLoop();
     }
 
     changeQueryInterval(newQueryInterval: UpdateIntervalDto): UpdateIntervalResponseDto {
@@ -63,6 +62,7 @@ export class ConsumerService {
         return new UpdateIntervalResponseDto(intervalUpdated, updateMessage);
     }
 
+    /*
     private consumerLoop() {
         setTimeout(async () => {
             const result = await this.transactionEventDataSource.getAllTransactionsWithEvents();
@@ -80,6 +80,7 @@ export class ConsumerService {
             this.consumerLoop();
         }, this.queryInterval.interval);
     }
+    */
 
     private async validateTransactionEvents(
         transaction: Transaction, events: Event[], batchSize: number
@@ -99,7 +100,7 @@ export class ConsumerService {
         return validEvents;
     }
 
-    private consumerLoopValidation() {
+    private consumerLoop() {
         setTimeout(async () => {
             const result = await this.transactionEventDataSource.getAllTransactionsWithEvents();
             const transactions = result != undefined ? result : [];
@@ -107,11 +108,12 @@ export class ConsumerService {
                 const transaction = transactions[i];
                 const transactionEvents =
                     await this.transactionEventDataSource.getAllTransactionEvents(transaction.id);
-                const validEvents =
+                const validEvents = transactionEvents && transactionEvents.length > 0 ?
                     await this.validateTransactionEvents(
-                        transaction, transactionEvents ? transactionEvents : [], this.batchSize);
+                        transaction, transactionEvents, this.batchSize) :
+                    [];
                 const consumedEvents =
-                    await this.transactionEventDataSource.applyAllTransactionEventsValidation(
+                    await this.transactionEventDataSource.applyAllTransactionEvents(
                         transaction.id, validEvents);
                 if (!consumedEvents || consumedEvents.length == 0)
                     this.logger.error(
@@ -119,7 +121,7 @@ export class ConsumerService {
                 else
                     consumedEvents.forEach(event => this.logger.log(`Event ${event.id} consumed! :)`));
             }
-            this.consumerLoopValidation();
+            this.consumerLoop();
         }, this.queryInterval.interval);
     }
 }
