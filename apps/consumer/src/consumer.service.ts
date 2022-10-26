@@ -11,6 +11,7 @@ import { Interval } from './entities/interval.entity';
 import { Event } from './entities/event.entity';
 import { Transaction } from './entities/transaction.entity';
 import { ObjectUtils } from 'utils/utils';
+import { createEventReducer } from './reducer/event-reducer/event.reducer';
 
 export const CONSUMER_LOGGER_TOKEN = Symbol('CONSUMER_LOGGER_TOKEN');
 export const CONSUMER_TRANSACTION_EVENT_DATA_SOURCE_TOKEN = Symbol('CONSUMER_TRANSACTION_EVENT_TOKEN');
@@ -104,8 +105,9 @@ export class ConsumerService {
         setTimeout(async () => {
             const result = await this.transactionEventDataSource.getAllTransactionsWithEvents();
             const transactions = result != undefined ? result : [];
-            for (let i = 0; i < transactions.length; i++) {
+            for (let i = 0; i < transactions.length && i < this.batchSize; i++) {
                 const transaction = transactions[i];
+                const eventReducer = createEventReducer(transaction);
                 const transactionEvents =
                     await this.transactionEventDataSource.getAllTransactionEvents(transaction.id);
                 const validEvents = transactionEvents && transactionEvents.length > 0 ?
@@ -114,7 +116,7 @@ export class ConsumerService {
                     [];
                 const consumedEvents =
                     await this.transactionEventDataSource.applyAllTransactionEvents(
-                        transaction.id, validEvents);
+                        transaction.id, validEvents, this.batchSize, eventReducer);
                 if (!consumedEvents || consumedEvents.length == 0)
                     this.logger.error(
                         `Can not consume the events of the below transaction.\n${JSON.stringify(transaction)}! :(`);

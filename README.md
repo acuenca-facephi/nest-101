@@ -101,3 +101,16 @@ Exercise to learn about NestJS, a Node framework.
     ```
 * `nest g library {libraryName}`: Creates a new Nest library project.
 * `nest build {libraryName}`: Build library.
+
+### Setup dependencies
+**Docker**
+Apicurio registry:
+```shell
+docker run -it -p 8293:8080 --name apicurio-registry \                
+-e "REGISTRY_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5764/apicurio_registry" \
+-e "REGISTRY_DATASOURCE_USERNAME=apicurio_registry" \
+-e "REGISTRY_DATASOURCE_PASSWORD=apicurio_admin1234" \
+-e "JAVA_TOOL_OPTIONS=-Dregistry.events.sink.my-custom-consumer=http://host.docker.internal:7890/schema-registry/events" \
+apicurio/apicurio-registry-sql:latest-release
+```
+
