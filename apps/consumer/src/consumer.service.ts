@@ -10,7 +10,7 @@ import { UpdateIntervalDto } from './dto/update/update-interval.dto';
 import { Interval } from './entities/interval.entity';
 import { Event } from './entities/event.entity';
 import { Transaction } from './entities/transaction.entity';
-import { ObjectUtils } from 'utils/utils';
+import { ObjectUtils } from '@utils/utils';
 import { createEventReducer } from './reducer/event-reducer/event.reducer';
 
 export const CONSUMER_LOGGER_TOKEN = Symbol('CONSUMER_LOGGER_TOKEN');

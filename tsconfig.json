@@ -1,12 +1,13 @@
 {
   "compilerOptions": {
     "module": "commonjs",
+    "esModuleInterop": true,
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
-    "target": "es2017",
+    "target": "ES6",
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
@@ -24,10 +25,10 @@
       "@app/postgres/*": [
         "libs/postgres/src/*"
       ],
-      "utils/utils": [
+      "@utils/utils": [
         "libs/utils/src"
       ],
-      "utils/utils/*": [
+      "@utils/utils/*": [
         "libs/utils/src/*"
       ],
       "@schreg/schema-registry": [

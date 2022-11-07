@@ -7,7 +7,7 @@ import { TransactionDataSource } from '../transaction.datasource';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PostgresService } from '@app/postgres';
 import { ConfigService } from '@nestjs/config';
-import { APP_LOGGER_TOKEN } from 'apps/transactions/src/app.service';
+import { APP_LOGGER_TOKEN } from '../../../../app.service';
 
 @Injectable()
 export class TransactionPostgreSqlDataSource implements TransactionDataSource {
@@ -68,7 +68,7 @@ export class TransactionPostgreSqlDataSource implements TransactionDataSource {
     }
 
     async update(transactionId: string, updateTransactionDto: UpdateTransactionDto): Promise<UpdateTransactionResponseDto | undefined> {
-        const result = await this.PostgresTable.update([[ 'id', transactionId ]], updateTransactionDto);
+        const result = await this.PostgresTable.update([['id', transactionId]], updateTransactionDto);
 
         var transactionResponse = result != undefined ? new UpdateTransactionResponseDto(result) : result;
 

@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { Json, ObjectUtils, UUID } from 'utils/utils';
+import { Json, ObjectUtils, UUID } from '@utils/utils';
 
 export class Event {
     #id: UUID;

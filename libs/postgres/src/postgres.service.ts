@@ -1,10 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Pool, PoolClient, QueryResult } from 'pg';
-import { ObjectUtils, Json, UUID } from 'utils/utils';
-import * as pgPromise from 'pg-promise';
+import { ObjectUtils, Json, UUID } from '@utils/utils';
+import pgPromise from 'pg-promise';
 import { PostgresForeignKeyDefinition } from './entities/postgres-foreingkey-definition';
 import { PostgresConfig } from './entities/postgres-config';
-import { getAllObjectPropertyNames } from 'apps/transactions/src/util/util';
 const pgp = pgPromise({});
 
 @Injectable()
@@ -193,7 +192,7 @@ export class PostgresService {
 
     private noPropertiesError(propertiesLength: number, objectProperties: object) {
         if (propertiesLength == 0) {
-            const [propertiesNames, _] = getAllObjectPropertyNames(objectProperties);
+            const [propertiesNames, _] = ObjectUtils.getAllObjectPropertyNames(objectProperties);
             throw new Error("There's no properties that matchs with the stored object.\n" +
                 `\tStored object property names: ${this.ObjectPropertyNames}\n` +
                 `\tSended object properties: ${propertiesNames}`);

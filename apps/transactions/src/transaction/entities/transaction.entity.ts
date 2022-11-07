@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { getAllObjectPropertyNames } from '../../util/util';
-import { UUID } from 'utils/utils';
+import { ObjectUtils, UUID } from '@utils/utils';
 import { IsDateString, IsNotEmpty, IsString } from 'class-validator';
 
 export class Transaction {
@@ -55,4 +54,4 @@ export type TransactionKeys = keyof Transaction;
 
 export const TransactionInstance = new Transaction(new UUID(''), '', '', '');
 
-export const [TransactionPropertiesNames, TransactionProperties] = getAllObjectPropertyNames(TransactionInstance);
+export const [TransactionPropertiesNames, TransactionProperties] = ObjectUtils.getAllObjectPropertyNames(TransactionInstance);

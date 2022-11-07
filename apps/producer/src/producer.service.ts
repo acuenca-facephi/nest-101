@@ -4,7 +4,7 @@ import { ApicurioV2SchemaRegistryDataSource } from '@schreg/schema-registry/vali
 import { generateFakeInstance } from '@schreg/schema-registry/validation/json-schema-faker.utils';
 import { JsonSchemaService } from '@schreg/schema-registry/validation/json-schema.service';
 import { SchemaRegistryDataSource } from '@schreg/schema-registry/validation/schema-registry.datsource';
-import { ObjectUtils } from 'utils/utils';
+import { ObjectUtils } from '@utils/utils';
 import { CreateEventResponseDto } from './dto/create/create-event-response.dto';
 import { CreateEventDto } from './dto/create/create-event.dto';
 import { TransactionEventDataSource } from './dto/datasource/transaction.datasource';

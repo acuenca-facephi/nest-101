@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { ObjectUtils, UUID } from 'utils/utils';
+import { ObjectUtils, UUID } from '@utils/utils';
 
 export class Transaction {
     #id: UUID;

@@ -3,7 +3,7 @@ import {
     Inject, Logger, Post, UseInterceptors
 } from '@nestjs/common';
 import { ConsumerService, CONSUMER_LOGGER_TOKEN } from './consumer.service';
-import { ExcludeNullInterceptor } from 'utils/utils';
+import { ExcludeNullInterceptor } from '@utils/utils';
 import { UpdateIntervalDto } from './dto/update/update-interval.dto';
 
 @Controller()

@@ -9,5 +9,17 @@
     "testRegex": ".e2e-spec.ts$",
     "transform": {
         "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "preset": "ts-jest",
+    "transformIgnorePatterns": [
+        "<rootDir>/node_modules/"
+    ],
+    "moduleNameMapper": {
+        "@utils/utils/(.*)": "<rootDir>../../../libs/utils/src/$1",
+        "@utils/utils": "<rootDir>../../../libs/utils/src",
+        "@app/postgres/(.*)": "<rootDir>../../../libs/postgres/src/$1",
+        "@app/postgres": "<rootDir>../../../libs/postgres/src",
+        "@schreg/schema-registry/(.*)": "<rootDir>../../../libs/schema-registry/src/$1",
+        "@schreg/schema-registry": "<rootDir>../../../libs/schema-registry/src"
     }
 }

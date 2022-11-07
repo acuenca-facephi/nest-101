@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import { CreateEventDto } from './dto/create/create-event.dto';
 import { ProducerService, PRODUCER_LOGGER_TOKEN } from './producer.service';
-import { ExcludeNullInterceptor } from 'utils/utils';
+import { ExcludeNullInterceptor } from '@utils/utils';
 import { CreateEventResponseDto } from './dto/create/create-event-response.dto';
 
 @Controller('transaction-event')
