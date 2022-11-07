@@ -1,0 +1,51 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "event",
+    "description": "A event is an object that contain information of a occurrence about a transaction.",
+    "type": "object",
+    "properties": {
+        "id": {
+            "description": "The unique identifier(UUID) for an event",
+            "type": "string",
+            "format": "uuid"
+        },
+        "time": {
+            "description": "Creation time of the event. (ISO 8601)",
+            "type": "string",
+            "format": "date-time"
+        },
+        "transactionId": {
+            "description": "Transaction identifier.",
+            "type": "string",
+            "format": "uuid"
+        },
+        "type": {
+            "description": "Event type, used to validate the event.",
+            "type": "string"
+        },
+        "consumed": {
+            "description": "This field is to perform a logical delete of an event and mark it as consumed.",
+            "type": "boolean"
+        },
+        "data": {
+            "description": "Status of the transaction.",
+            "type": "object",
+            "minProperties": 1,
+            "properties": {
+                "status": {
+                    "description": "Status of the transaction.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "status"
+            ]
+        }
+    },
+    "required": [
+        "id",
+        "time",
+        "transactionId",
+        "data"
+    ]
+}

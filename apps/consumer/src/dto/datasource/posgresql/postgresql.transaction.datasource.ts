@@ -12,6 +12,7 @@ import { UpdateEventResponseDto } from '../../update/update-event-response.dto';
 import { UpdateEventDto } from '../../update/update-event.dto';
 import { PostgresForeignKeyDefinition } from '@app/postgres/entities/postgres-foreingkey-definition';
 import { PoolClient } from 'pg';
+import { Store } from '@reduxjs/toolkit';
 
 @Injectable()
 export class TransactionPostgreSqlDataSource implements TransactionEventDataSource {
@@ -86,14 +87,14 @@ export class TransactionPostgreSqlDataSource implements TransactionEventDataSour
 
     async getAllTransactionEvents(transactionId: string, client?: PoolClient): Promise<Event[] | undefined> {
         const result = await this.EventPostgresTable.getWhere(
-            { transactionId: transactionId, consumed: false }, true, client);
+            { transactionId: transactionId, consumed: false }, true, ['time'], client);
 
         var events = result?.map(this.mapObjectToEvent);
 
         return events;
     }
 
-    async updateTransaction(
+    private async updateTransaction(
         transactionId: string, updateTransactionDto: UpdateTransactionDto, client?: PoolClient
     ): Promise<UpdateTransactionResponseDto | undefined> {
         const result = await this.TransactionPostgresTable.update(
@@ -102,13 +103,14 @@ export class TransactionPostgreSqlDataSource implements TransactionEventDataSour
         return result != undefined ? new UpdateTransactionResponseDto(result) : result;
     }
 
-    async updateEvent(eventId: string, updateEventDto: UpdateEventDto, client?: PoolClient): Promise<UpdateEventResponseDto | undefined> {
+    private async updateEvent(eventId: string, updateEventDto: UpdateEventDto, client?: PoolClient): Promise<UpdateEventResponseDto | undefined> {
         const result = await this.EventPostgresTable.update(
             [[this.TablePrimaryKeyName, eventId]], updateEventDto, client);
 
         return result != undefined ? new UpdateEventResponseDto(result) : result;
     }
 
+    /*
     async applyAllTransactionEvents(transactionId: string, batchSize: number): Promise<Event[] | undefined> {
         var result: Event[] | undefined = [];
 
@@ -130,22 +132,26 @@ export class TransactionPostgreSqlDataSource implements TransactionEventDataSour
 
         return result;
     }
+    */
 
-    async applyAllTransactionEventsValidation(
-        transactionId: string, events: Event[]
+    async applyAllTransactionEvents(
+        transactionId: string, events: Event[], batchSize: number, eventReducer: Store<Transaction, any>
     ): Promise<Event[] | undefined> {
         var result: Event[] | undefined = [];
 
         try {
             const client = await this.TransactionPostgresTable.beginTransaction();
             const transactionEvents: Event[] = events != undefined ? events : [];
-            for (let i = 0; i < transactionEvents.length; i++) {
+            for (let i = 0; i < transactionEvents.length && i < batchSize; i++) {
                 const event = transactionEvents[i];
-                const transactionUpdated: UpdateTransactionDto = event.data;
-                await this.updateTransaction(transactionId, transactionUpdated, client!);
+                eventReducer.dispatch({
+                    ...event,
+                    id: event.id
+                });
                 await this.updateEvent(event.id, { consumed: true }, client!);
                 result.push(event);
             }
+            await this.updateTransaction(transactionId, eventReducer.getState(), client!);
             await this.TransactionPostgresTable.endTransaction(client!);
         } catch (error) {
             result = undefined;

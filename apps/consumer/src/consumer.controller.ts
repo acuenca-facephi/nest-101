@@ -6,7 +6,7 @@ import { ConsumerService, CONSUMER_LOGGER_TOKEN } from './consumer.service';
 import { ExcludeNullInterceptor } from 'utils/utils';
 import { UpdateIntervalDto } from './dto/update/update-interval.dto';
 
-@Controller('interval')
+@Controller()
 @UseInterceptors(ClassSerializerInterceptor, ExcludeNullInterceptor)
 export class ConsumerController {
     constructor(
@@ -23,7 +23,7 @@ export class ConsumerController {
         return this.status();
     }
 
-    @Post()
+    @Post('/interval')
     async postNewQueryInterval(@Body() newQueryInterval: UpdateIntervalDto) {
         const result = this.consumerService.changeQueryInterval(newQueryInterval);
 

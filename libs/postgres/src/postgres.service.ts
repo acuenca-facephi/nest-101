@@ -192,15 +192,38 @@ export class PostgresService {
     }
 
     private noPropertiesError(propertiesLength: number, objectProperties: object) {
-        const [propertiesNames, _] = getAllObjectPropertyNames(objectProperties);
-        if (propertiesLength == 0)
+        if (propertiesLength == 0) {
+            const [propertiesNames, _] = getAllObjectPropertyNames(objectProperties);
             throw new Error("There's no properties that matchs with the stored object.\n" +
                 `\tStored object property names: ${this.ObjectPropertyNames}\n` +
                 `\tSended object properties: ${propertiesNames}`);
+        }
     }
 
     private selectClient(client?: PoolClient): Pool | PoolClient {
         return client ? client : this.Pool;
+    }
+
+    private buildWhereText(
+        objectToMatch: object, propertiesModifier: number = 0
+    ): [string, any[]] {
+        let whereText: string = 'WHERE ';
+        const queryValues = [];
+        const propertiesToMatch =
+            Object.entries(objectToMatch)
+                .filter(entry => this.ObjectPropertyNames.includes(entry[0]));
+
+        this.noPropertiesError(propertiesToMatch.length, objectToMatch);
+        for (let index = 0; index < propertiesToMatch.length; index++) {
+            const propertyToMatch = propertiesToMatch[index][0];
+            const valueToMatch = propertiesToMatch[index][1];
+            const operator = valueToMatch == null ? ' IS ' : '=';
+            const textEnd = index < propertiesToMatch.length - 1 ? ' AND ' : '';
+            whereText += `"${propertyToMatch}"${operator}$${index + 1 + propertiesModifier}${textEnd}`;
+            queryValues.push(valueToMatch);
+        }
+
+        return [whereText, queryValues];
     }
 
     async getAll(): Promise<object[] | undefined> {
@@ -241,33 +264,31 @@ export class PostgresService {
         return result;
     }
 
-    async getWhere(objectToMatch: object, forUpdate: boolean = false, client?: PoolClient): Promise<object[] | undefined> {
+    async getWhere(
+        objectToMatch: object, forUpdate: boolean = false, orderBy: string[] = [], client?: PoolClient
+    ): Promise<object[] | undefined> {
         /**
          * ------------------------------ TODO ------------------------------
          * - Add support to change between AND, OR, IN, ALL and ANY.
          * - Add support to change the comparator operators (=, !=, <, >, <=, >=, IS, IS NOT).
          * - Add support to correlated and nested queries.
          * - Add support to JOIN with foreign keys/tables.
+         * - Add support for ORDER BY DESC/ASC any field.
          * - Add support for LIMIT.
          */
         const dbClient = this.selectClient(client);
-        const propertiesToMatch = Object.entries(objectToMatch).filter(entry => this.ObjectPropertyNames.includes(entry[0]));
         var result: object[] | undefined;
-        var whereText: string = '';
-        const queryValues = [];
 
         try {
-            this.noPropertiesError(propertiesToMatch.length, objectToMatch);
-            for (let index = 0; index < propertiesToMatch.length; index++) {
-                const propertyToMatch = propertiesToMatch[index][0];
-                const valueToMatch = propertiesToMatch[index][1];
-                const operator = valueToMatch == null ? ' IS ' : '=';
-                const textEnd = index < propertiesToMatch.length - 1 ? ' AND ' : '';
-                whereText += `"${propertyToMatch}"${operator}$${index + 1}${textEnd}`;
-                queryValues.push(valueToMatch);
-            }
+            const [whereText, queryValues] = this.buildWhereText(objectToMatch);
+            const orderByText = ` ORDER BY ${orderBy
+                .filter(entry => this.ObjectPropertyNames.includes(entry))
+                .join(', ')}`;
             const query = pgp.as.format(
-                `SELECT * FROM ${this.TableName} WHERE ${whereText}${forUpdate ? ' FOR UPDATE' : ''};`, queryValues);
+                `SELECT * FROM ${this.TableName} ${whereText
+                }${orderBy.length > 0 ? orderByText : ''
+                }${forUpdate ? ' FOR UPDATE' : ''
+                };`, queryValues);
 
             const queryResult = await dbClient.query(query);
             var result = queryResult.rowCount > 0 ? queryResult.rows as object[] : undefined;
@@ -312,11 +333,15 @@ export class PostgresService {
         return result;
     }
 
-    async update(ids: [idFieldName: string, idValue: any][], objectProperties: object, client?: PoolClient): Promise<any | undefined> {
+    async update(
+        ids: [idFieldName: string, idValue: any][],
+        objectProperties: object,
+        client?: PoolClient,
+        whereObject?: object
+    ): Promise<any | undefined> {
         const dbClient = this.selectClient(client);
         var result: any | undefined;
         var updateText: string = '';
-        var whereText: string = '';
         const queryValues = [];
         const propertiesToUpdate = Object.entries(objectProperties).filter(
             entry => this.ObjectPropertyNames.includes(entry[0]) && !this.TablePrimaryKeysNames.includes(entry[0]));
@@ -329,14 +354,19 @@ export class PostgresService {
                 updateText += `"${propertyToUpdate[0]}"=$${index + 1}${index < propertiesToUpdate.length - 1 ? ', ' : ''}`;
                 queryValues.push(propertyToUpdate[1]);
             }
-            for (let i = 0; i < ids.length; i++) {
-                whereText += `"${ids[i][0]}" = $${queryValues.length + i + 1}`;
-                queryValues.push(ids[i][1]);
-            }
+
+            const [whereText, whereValues] = this.buildWhereText({
+                ...whereObject,
+                ...ids.map(it => {
+                    return { [it[0]]: it[1] as any }
+                }).reduce((obj, item) => {
+                    return { ...obj, ...item };
+                }, {})
+            }, propertiesToUpdate.length);
 
             const query = {
-                text: `UPDATE ${this.TableName} SET ${updateText} WHERE ${whereText} RETURNING ${this.TablePrimaryKeysNames.join(', ')};`,
-                values: queryValues
+                text: `UPDATE ${this.TableName} SET ${updateText} ${whereText} RETURNING ${this.TablePrimaryKeysNames.join(', ')};`,
+                values: queryValues.concat(whereValues)
             };
 
             const queryResult = await dbClient.query(query);
