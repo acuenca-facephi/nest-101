@@ -56,6 +56,10 @@ export class PostgresService {
         this.createTableIfNotExists();
     }
 
+    closeConnection() {
+        this.Pool.end();
+    }
+
     private mapJsTypeToPsqlType(jsType: any): string {
         var postgreSqlType: string;
         var typeofJsType = typeof jsType;
